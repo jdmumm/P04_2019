@@ -12,7 +12,7 @@ IIf(CPP_3.all_Cnt = 0, 0,[CPP_3.all_Cnt] * [CPP_5.propLgCnt_awl]) AS lrg_Cnt,
 IIf ([CPP_3.all_Kg] = 0, 0,[CPP_3.all_Kg] * [CPP_5.propLgWt_awl]) AS lrg_Kg,
 
 IIf(CPP_3.all_Cnt = 0, 0,[CPP_3.all_Cnt] * [CPP_5.propFemCnt_awl]) AS fem_Cnt,
-IIf ([CPP_3.all_Kg] = 0, 0,[CPP_3.all_Kg] * [CPP_5.propFemWt_awl]) AS fem_Kg,
+IIf ([CPP_3.all_Kg] = 0, 0,[CPP_3.all_Kg] * [CPP_5.propFemWt_awl]) AS fem_Kg
 
 INTO CPP 
 
