@@ -1,6 +1,5 @@
 ## CPUE ####
-# Josh Mumm 
-# 190918
+# Josh Mumm 190918
 # Calculates CATCH and CPUE for both Large and All sizes of spot shrimp.
 
 ## PREP ----
@@ -113,5 +112,5 @@ all_byYear %>% left_join (large_byYear) %>%
 all_byArea %>% left_join (large_byArea) %>%
   select(year, Area, N, n, mu_all_kg, var_all_kg, se_all_kg, mu_lrg_kg, var_tau_lrg_kg, se_lrg_kg)-> var_byArea
 
-write.csv(var_byYear, "./output/var_byYear.csv", row.names = F)  
-write.csv(var_byArea, "./output/var_byArea.csv", row.names = F)
+write.csv(var_byYear, "./output/cpue_byYear.csv", row.names = F)  
+write.csv(var_byArea, "./output/cpue_byArea.csv", row.names = F)
