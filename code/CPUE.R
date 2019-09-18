@@ -113,5 +113,5 @@ all_byYear %>% left_join (large_byYear) %>%
 all_byArea %>% left_join (large_byArea) %>%
   select(year, Area, N, n, mu_all_kg, var_all_kg, se_all_kg, mu_lrg_kg, var_tau_lrg_kg, se_lrg_kg)-> var_byArea
 
-write.csv(var_byYear, "./output/var_byYear_xz_w18.csv", row.names = F)  
-write.csv(var_byArea, "./output/var_byArea_xz_w18.csv", row.names = F)
+write.csv(var_byYear, "./output/var_byYear.csv", row.names = F)  
+write.csv(var_byArea, "./output/var_byArea.csv", row.names = F)
