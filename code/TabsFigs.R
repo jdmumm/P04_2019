@@ -23,9 +23,9 @@ theme_set(theme_bw(base_size=12,base_family='Times New Roman')+
 #         lrg_cnt = Est_Count_LG, lrg_lb = Est_Wt_Large * 2.20462, cpue_all_lbs = CPUE_All_LB, cpue_all_cnt = CPUE_All_Count, cpue_lrg_cnt=CPUE_Large_Count) ->site
 read.csv("data/SiteStatArea_LUT.csv") -> siteStatLUT
 read.csv("data/yearArea_LUT.csv") -> yearAreaLUT
-#read.csv("data/femEggBySite.csv") -> egg
-# read.csv("data/PWS Shrimp All.csv") %>% # from K:\MANAGEMENT\SHELLFISH\PWS Shrimp All.xlsx
-#   select (year = DOL.Year, species = Species.Code, stat=Stat.Area, pots = Effort..sum., lbs = Whole.Weight..sum.) -> harv
+#read.csv("data/femEggBySite.csv") -> egg # shouldn't be necesasry once convert to use awl file. 
+ read.csv("data/PWS Shrimp All.csv") %>% # from K:\MANAGEMENT\SHELLFISH\PWS Shrimp All.xlsx. Through 2017, ask CR for update with 18 & 19. 
+   select (year = DOL.Year, species = Species.Code, stat=Stat.Area, pots = Effort..sum., lbs = Whole.Weight..sum.) -> harv
 read.csv('data/AWL_190920.csv') %>% 
          select(year = YEAR, Event = EVENT_ID, site = SITE_ID, Station = STATION_ID, pot = POT_ID, species = FK_SPECIES_CODE,
          sex = FK_SEX_CODE, freq = FREQUENCY, cl = CARAPACE_LENGTH_MM, wt = WEIGHT_GRAMS, eggDev = SHRIMP_EGG_DEVEL_CODE, 
