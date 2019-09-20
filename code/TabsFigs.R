@@ -17,20 +17,20 @@ theme_set(theme_bw(base_size=12,base_family='Times New Roman')+
             theme(panel.grid.major = element_blank(),
                   panel.grid.minor = element_blank()))
 
-read.csv("data/surveyWide_from16SS.csv") -> surv  #Survey-wide summary by year
-read.csv("data/bySite_from16SS.csv")%>%
-  transmute(year = Year, site = Site_ID, pots = Pot_Count, all_cnt = Total_Spot_Count, all_lb = Total_Spot_Wt_KG * 2.20462, propLrg = Proportion_Large, 
-         lrg_cnt = Est_Count_LG, lrg_lb = Est_Wt_Large * 2.20462, cpue_all_lbs = CPUE_All_LB, cpue_all_cnt = CPUE_All_Count, cpue_lrg_cnt=CPUE_Large_Count) ->site
+#read.csv("data/surveyWide_from16SS.csv") -> surv  #Survey-wide summary by year
+#read.csv("data/bySite_from16SS.csv")%>%
+#  transmute(year = Year, site = Site_ID, pots = Pot_Count, all_cnt = Total_Spot_Count, all_lb = Total_Spot_Wt_KG * 2.20462, propLrg = Proportion_Large, 
+#         lrg_cnt = Est_Count_LG, lrg_lb = Est_Wt_Large * 2.20462, cpue_all_lbs = CPUE_All_LB, cpue_all_cnt = CPUE_All_Count, cpue_lrg_cnt=CPUE_Large_Count) ->site
 read.csv("data/SiteStatArea_LUT.csv") -> siteStatLUT
 read.csv("data/yearArea_LUT.csv") -> yearAreaLUT
-read.csv("data/femEggBySite.csv") -> egg
-read.csv("data/PWS Shrimp All.csv") %>% # from K:\MANAGEMENT\SHELLFISH\PWS Shrimp All.xlsx
-  select (year = DOL.Year, species = Species.Code, stat=Stat.Area, pots = Effort..sum., lbs = Whole.Weight..sum.) -> harv
-read.csv('data/AWL_171004.csv') %>% 
+#read.csv("data/femEggBySite.csv") -> egg
+# read.csv("data/PWS Shrimp All.csv") %>% # from K:\MANAGEMENT\SHELLFISH\PWS Shrimp All.xlsx
+#   select (year = DOL.Year, species = Species.Code, stat=Stat.Area, pots = Effort..sum., lbs = Whole.Weight..sum.) -> harv
+read.csv('data/AWL_190920.csv') %>% 
          select(year = YEAR, Event = EVENT_ID, site = SITE_ID, Station = STATION_ID, pot = POT_ID, species = FK_SPECIES_CODE,
          sex = FK_SEX_CODE, freq = FREQUENCY, cl = CARAPACE_LENGTH_MM, wt = WEIGHT_GRAMS, eggDev = SHRIMP_EGG_DEVEL_CODE, 
          breed = SHRIMP_BREEDING_CODE, eggCol = SHRIMP_EGG_COLOR_CODE, eggDead = SHRIMP_DEAD_EGG_COUNT, parasite = SHRIMP_PARASITE_CODE) -> awl
-read.csv('data/Pot_Performance_171004.csv') %>% select( Event = EVENT_ID, site = SITE_ID, pot = POT_ID, Station = STATION, perf = FK_GEAR_PERFORMANCE_CODE, 
+read.csv('data/potPerformance_190920.csv') %>% select( Event = EVENT_ID, site = SITE_ID, pot = POT_ID, Station = STATION, perf = FK_GEAR_PERFORMANCE_CODE, 
                                                         gearComment = GEAR_COMMENTS, sample = SAMPLE_POT ) -> pp 
 
 ## ASSEMBLE TABLES ON JRs LIST ####
