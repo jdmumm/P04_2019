@@ -35,17 +35,26 @@ read.csv("data/yearArea_LUT.csv") -> yearAreaLUT
   #         lrg_cnt = Est_Count_LG, lrg_lb = Est_Wt_Large * 2.20462, cpue_all_lbs = CPUE_All_LB, cpue_all_cnt = CPUE_All_Count, cpue_lrg_cnt=CPUE_Large_Count) ->site
   #read.csv("data/femEggBySite.csv") -> egg # shouldn't be necesasry once convert to use awl file. 
 
-## T2. Survey-wide Catch and CPUE by year ----
-
+## T2. Catch and CPUE, survey-wide ----
 cpue %>% transmute(year,N,
                 tau_all_lb = tau_all_kg * 2.20462, tau_all_cnt,
                 mu_all_lb = mu_all_kg * 2.20462, mu_all_cnt, 
                 tau_lrg_lb = tau_lrg_kg * 2.20462, tau_lrg_cnt,
                 mu_lrg_lb = mu_lrg_kg * 2.20462, mu_lrg_cnt) %>% 
   write.csv ('output/t2_catchAndCpue_surveywide.csv')
-
-
-
+## T4. Catch and CPUE, byArea ----
+  # Harvest - aggregate     
+      harv %>% left_join (yearAreaLUT) %>% # join shrimpArea to harvest
+      na.omit %>%  #exclude those 814 records with null effort
+      group_by (year,area) %>% summarize (cpueAllLb = sum(lbs)/sum(pots)) %>%
+      dcast(year ~ area, value.var = "cpueAllLb") -> cpueByArea_h #Commercial cpue by area. 
+  # Survey - select and reshape
+      cpue_area %>% transmute (year, Area, mu_all_lb = mu_all_kg * 2.20462)  %>%
+        dcast(year ~ Area, value.var = "mu_all_lb") -> cpueByArea_s
+  # Join harvest to survey and write  
+    left_join(cpueByArea_s,cpueByArea_h, by = "year", suffix = c("_survey","_commerical")) -> cpueByArea
+    write.csv(cpueByArea,"output/t4_CPUEallLb_byArea.csv") #
+      #commercial values don't match those in draft 2017 report. Presumably mgmt overwrote values in report. 
 
 
 
