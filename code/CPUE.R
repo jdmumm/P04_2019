@@ -78,12 +78,15 @@ all_bySite %>% select(year, Site, Area, N, mu_all_cnt, mu_all_kg, tau_all_kg, va
     mu_hat_all_kg = sum(all_kg, na.rm = T)/n,
     var_all_kg = first(var_all_kg), 
     tau_all_kg = first(tau_all_kg), 
-    r_bar = sum(lrg_kg, na.rm = T)/sum(all_kg, na.rm = T),
-    s2_h = sum((lrg_kg - r_bar*all_kg)^2, na.rm = T)/ (n-1),
+    r_bar_kg = sum(lrg_kg, na.rm = T)/sum(all_kg, na.rm = T),
+    r_bar_cnt = sum(lrg_cnt, na.rm = T)/sum(all_cnt, na.rm = T),
+    s2_h = sum((lrg_kg - r_bar_kg*all_kg)^2, na.rm = T)/ (n-1),
     r_var = (s2_h/n) * (1/mu_hat_all_kg)^2 * (N-n)/N, 
-    mu_lrg_kg  = r_bar * first(mu_all_kg),
-    tau_lrg_kg =  mu_lrg_kg * N, 
-    var_tau_lrg_kg = (tau_all_kg^2)*r_var + (r_bar^2)*var_all_kg - r_var*var_all_kg, 
+    mu_lrg_kg  = r_bar_kg * first(mu_all_kg),
+    mu_lrg_cnt = r_bar_cnt * first(mu_all_cnt),
+    tau_lrg_kg =  mu_lrg_kg * N,
+    tau_lrg_cnt = mu_lrg_cnt * N,
+    var_tau_lrg_kg = (tau_all_kg^2)*r_var + (r_bar_kg^2)*var_all_kg - r_var*var_all_kg, 
     var_mu_lrg_kg = var_tau_lrg_kg/(N^2) ) -> large_bySite      
 #byYear 
 large_bySite %>% filter (Site != "11") %>% group_by (year) %>% 
@@ -91,7 +94,9 @@ large_bySite %>% filter (Site != "11") %>% group_by (year) %>%
     n = sum(n),
     N = sum(N),
     tau_lrg_kg = sum(tau_lrg_kg),
-    mu_lrg_kg  = tau_lrg_kg / N, 
+    tau_lrg_cnt = sum(tau_lrg_cnt),
+    mu_lrg_kg  = tau_lrg_kg / N,
+    mu_lrg_cnt = tau_lrg_cnt / N,
     var_tau_lrg_kg  = sum(var_tau_lrg_kg, na.rm = T), # Na.rm added as bandaid for 2011 site 5 no shrimp in cpp.Edit data eventually. 
     var_mu_lrg_kg = var_tau_lrg_kg/(N^2) ,
     se_lrg_kg = (var_mu_lrg_kg^.5)) -> large_byYear  
@@ -101,16 +106,20 @@ large_bySite %>% filter (Site != "11") %>% group_by (year,Area) %>%
     n = sum(n),
     N = sum(N),
     tau_lrg_kg = sum(tau_lrg_kg),
-    mu_lrg_kg  = tau_lrg_kg / N, 
+    tau_lrg_cnt = sum(tau_lrg_cnt), 
+    mu_lrg_kg  = tau_lrg_kg / N,
+    mu_lrg_cnt = tau_lrg_cnt / N, 
     var_tau_lrg_kg  = sum(var_tau_lrg_kg, na.rm = T), # Na.rm added as bandaid for 2011 site 5 no shrimp in cpp. Edit data eventually. 
     var_mu_lrg_kg = var_tau_lrg_kg/(N^2) ,
     se_lrg_kg = (var_mu_lrg_kg^.5)) -> large_byArea
 
 #select, join and Write ----
 all_byYear %>% left_join (large_byYear) %>%
-  select(year, N, n, tau_all_cnt, tau_lrg_kg, mu_all_kg, mu_lrg_kg, se_all_kg, se_lrg_kg)-> byYear
+  select(year, N, n, tau_all_kg, tau_all_cnt, mu_all_kg, mu_all_cnt, se_all_kg,
+         tau_lrg_kg, tau_lrg_cnt, mu_lrg_kg, mu_lrg_cnt, se_lrg_kg)-> byYear
 all_byArea %>% left_join (large_byArea) %>%
-  select(year, Area, N, n, tau_all_cnt, tau_lrg_kg, mu_all_kg, mu_lrg_kg, se_all_kg, se_lrg_kg)-> byArea
+  select(year, N, n, tau_all_kg, tau_all_cnt, mu_all_kg, mu_all_cnt, se_all_kg,
+         tau_lrg_kg, tau_lrg_cnt, mu_lrg_kg, mu_lrg_cnt, se_lrg_kg)-> byArea
 
 write.csv(byYear, "./output/cpue_byYear.csv", row.names = F)  
 write.csv(byArea, "./output/cpue_byArea.csv", row.names = F)    
