@@ -4,11 +4,10 @@
 # modified from P04_2017BOF/TabsFigs_WVarFigs.R which was used for 2017 report  
 # major changes include switch to use point estimates from CPUE.R rather than
 # spreadsheet based on Access queries as KG and JR insisted in 2017.  
-# <.7% dif in CPUE lrg kg between two sources
 
-## Load ####
+## Load ----
 library(tidyverse)
-library(reshape2)
+library(reshape2) # ought to reshape with tidyr instead, so not required. 
 library(extrafont)
 font_import()
 loadfonts(device="win")
@@ -16,22 +15,66 @@ windowsFonts(Times=windowsFont("TT Times New Roman"))
 theme_set(theme_bw(base_size=12,base_family='Times New Roman')+ 
             theme(panel.grid.major = element_blank(),
                   panel.grid.minor = element_blank()))
-
-#read.csv("data/surveyWide_from16SS.csv") -> surv  #Survey-wide summary by year
-#read.csv("data/bySite_from16SS.csv")%>%
-#  transmute(year = Year, site = Site_ID, pots = Pot_Count, all_cnt = Total_Spot_Count, all_lb = Total_Spot_Wt_KG * 2.20462, propLrg = Proportion_Large, 
-#         lrg_cnt = Est_Count_LG, lrg_lb = Est_Wt_Large * 2.20462, cpue_all_lbs = CPUE_All_LB, cpue_all_cnt = CPUE_All_Count, cpue_lrg_cnt=CPUE_Large_Count) ->site
-read.csv("data/SiteStatArea_LUT.csv") -> siteStatLUT
-read.csv("data/yearArea_LUT.csv") -> yearAreaLUT
-#read.csv("data/femEggBySite.csv") -> egg # shouldn't be necesasry once convert to use awl file. 
- read.csv("data/PWS Shrimp All.csv") %>% # from K:\MANAGEMENT\SHELLFISH\PWS Shrimp All.xlsx. Through 2017, ask CR for update with 18 & 19. 
-   select (year = DOL.Year, species = Species.Code, stat=Stat.Area, pots = Effort..sum., lbs = Whole.Weight..sum.) -> harv
+read.csv('output/cpue_surveyWide.csv') -> cpue # catch and cpue from cpue.r, survey-wide
+read.csv('output/cpue_byArea.csv') -> cpue_area # catch and cpue from cpue.r, byArea
 read.csv('data/AWL_190920.csv') %>% 
          select(year = YEAR, Event = EVENT_ID, site = SITE_ID, Station = STATION_ID, pot = POT_ID, species = FK_SPECIES_CODE,
          sex = FK_SEX_CODE, freq = FREQUENCY, cl = CARAPACE_LENGTH_MM, wt = WEIGHT_GRAMS, eggDev = SHRIMP_EGG_DEVEL_CODE, 
          breed = SHRIMP_BREEDING_CODE, eggCol = SHRIMP_EGG_COLOR_CODE, eggDead = SHRIMP_DEAD_EGG_COUNT, parasite = SHRIMP_PARASITE_CODE) -> awl
 read.csv('data/potPerformance_190920.csv') %>% select( Event = EVENT_ID, site = SITE_ID, pot = POT_ID, Station = STATION, perf = FK_GEAR_PERFORMANCE_CODE, 
                                                         gearComment = GEAR_COMMENTS, sample = SAMPLE_POT ) -> pp 
+read.csv("data/PWS Shrimp All.csv") %>% # from K:\MANAGEMENT\SHELLFISH\PWS Shrimp All.xlsx. Through 2017, ask CR for update with 18 & 19. 
+  select (year = DOL.Year, species = Species.Code, stat=Stat.Area, pots = Effort..sum., lbs = Whole.Weight..sum.) -> harv
+read.csv("data/SiteStatArea_LUT.csv") -> siteStatLUT
+read.csv("data/yearArea_LUT.csv") -> yearAreaLUT
+
+# eventually delete, once fully converted to using point estimates from cpue.r not required. (190923)
+  #read.csv("data/surveyWide_from16SS.csv") -> surv  #Survey-wide summary by year
+  #read.csv("data/bySite_from16SS.csv")%>%
+  #  transmute(year = Year, site = Site_ID, pots = Pot_Count, all_cnt = Total_Spot_Count, all_lb = Total_Spot_Wt_KG * 2.20462, propLrg = Proportion_Large, 
+  #         lrg_cnt = Est_Count_LG, lrg_lb = Est_Wt_Large * 2.20462, cpue_all_lbs = CPUE_All_LB, cpue_all_cnt = CPUE_All_Count, cpue_lrg_cnt=CPUE_Large_Count) ->site
+  #read.csv("data/femEggBySite.csv") -> egg # shouldn't be necesasry once convert to use awl file. 
+
+## T2. Survey-wide Catch and CPUE by year ----
+
+cpue %>% transmute(year,N,
+                tau_all_lb = tau_all_kg * 2.20462, tau_all_cnt,
+                mu_all_lb = mu_all_kg * 2.20462, mu_all_cnt, 
+                tau_lrg_lb = tau_lrg_kg * 2.20462, tau_lrg_cnt,
+                mu_lrg_lb = mu_lrg_kg * 2.20462, mu_lrg_cnt) %>% 
+  write.csv ('output/t2_catchAndCpue_surveywide.csv')
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ## ASSEMBLE TABLES ON JRs LIST ####
 
