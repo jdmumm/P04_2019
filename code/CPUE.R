@@ -118,7 +118,7 @@ all_byYear %>% left_join (large_byYear) %>%
   select(year, N, n, tau_all_kg, tau_all_cnt, mu_all_kg, mu_all_cnt, se_all_kg,
          tau_lrg_kg, tau_lrg_cnt, mu_lrg_kg, mu_lrg_cnt, se_lrg_kg)-> byYear
 all_byArea %>% left_join (large_byArea) %>%
-  select(year, N, n, tau_all_kg, tau_all_cnt, mu_all_kg, mu_all_cnt, se_all_kg,
+  select(year, Area, N, n, tau_all_kg, tau_all_cnt, mu_all_kg, mu_all_cnt, se_all_kg,
          tau_lrg_kg, tau_lrg_cnt, mu_lrg_kg, mu_lrg_cnt, se_lrg_kg)-> byArea
 
 write.csv(byYear, "./output/cpue_surveyWide.csv", row.names = F)  
