@@ -18,8 +18,8 @@ theme_set(theme_bw(base_size=12,base_family='Times New Roman')+
 read.csv('output/cpue_surveyWide.csv') -> cpue # catch and cpue from cpue.r, survey-wide
 read.csv('output/cpue_byArea.csv') -> cpue_area # catch and cpue from cpue.r, byArea
 read.csv('data/AWL_190920.csv') %>% 
-         select(year = YEAR, Event = EVENT_ID, site = SITE_ID, Station = STATION_ID, pot = POT_ID, species = FK_SPECIES_CODE,
-         sex = FK_SEX_CODE, freq = FREQUENCY, cl = CARAPACE_LENGTH_MM, wt = WEIGHT_GRAMS, eggDev = SHRIMP_EGG_DEVEL_CODE, 
+         transmute(year = YEAR, Event = EVENT_ID, site = SITE_ID, Station = STATION_ID, pot = POT_ID, species = FK_SPECIES_CODE,
+         Sex = as.factor (FK_SEX_CODE), freq = FREQUENCY, cl = CARAPACE_LENGTH_MM, wt = WEIGHT_GRAMS, eggDev = SHRIMP_EGG_DEVEL_CODE, 
          breed = SHRIMP_BREEDING_CODE, eggCol = SHRIMP_EGG_COLOR_CODE, eggDead = SHRIMP_DEAD_EGG_COUNT, parasite = SHRIMP_PARASITE_CODE) -> awl
 read.csv('data/potPerformance_190920.csv') %>% select( Event = EVENT_ID, site = SITE_ID, pot = POT_ID, Station = STATION, perf = FK_GEAR_PERFORMANCE_CODE, 
                                                         gearComment = GEAR_COMMENTS, sample = SAMPLE_POT ) -> pp 
@@ -49,29 +49,29 @@ k <- 2.20462 # kilogram to lb conversion factor
     pp %>% select(Event, site, Station, pot, perf) %>%   
       right_join (awl)  %>% 
       filter (site != 11, !Station %in% c("E","E1","E2"), 
-              perf == 1, species == 965, sex %in% c(1,2)  ) -> awls  # excluding transitionals 
-    awls %>% group_by (year, sex)  %>% summarise( # issue where freq = 2 in 2005 for males, but since grouping by sex and virtually all males in 2005 were 2, ok as is 
+              perf == 1, species == 965, Sex %in% c(1,2)  ) -> awls  # excluding transitionals 
+    awls %>% group_by (year, Sex)  %>% summarise( # issue where freq = 2 in 2005 for males, but since grouping by sex and virtually all males in 2005 were 2, ok as is 
       n = n(),   
       len = mean (cl), 
       sd = var(cl)^.5,
       se = sd/(n^.5))-> meanLen
     
-    meanLen %>% select (year, sex, len) %>% spread(sex,len) -> cl #clunky, should rewrite 
-    meanLen %>% select (year, sex, n) %>% spread(sex,n) -> n 
-    meanLen %>% select (year, sex, sd) %>% spread(sex,sd) -> sd 
-    meanLen %>% select (year, sex, se) %>% spread(sex,se) -> se 
+    meanLen %>% select (year, Sex, len) %>% spread(Sex,len) -> cl #clunky, should rewrite 
+    meanLen %>% select (year, Sex, n) %>% spread(Sex,n) -> n 
+    meanLen %>% select (year, Sex, sd) %>% spread(Sex,sd) -> sd 
+    meanLen %>% select (year, Sex, se) %>% spread(Sex,se) -> se 
     left_join (n,cl, by = 'year') %>% left_join(se, by = 'year') -> CL
     colnames(CL) <- c('year','n_m', 'n_f', 'cl_m', 'cl_f', 'se_m', 'se_f') 
   
   # Sex proportions 
-    awls %>% group_by(year,sex) %>% summarise(cnt =  sum(freq)) %>%
-      spread(sex, cnt) -> sexCnt 
+    awls %>% group_by(year,Sex) %>% summarise(cnt =  sum(freq)) %>%
+      spread(Sex, cnt) -> sexCnt 
     colnames(sexCnt) <- c('year','m','f') 
     sexCnt %>% group_by(year) %>% summarise (pf = f/(m+f), pm = m/(m+f)) -> sexProp
   
   # Prop fems w eggs
-    awls %>% filter (sex == 2, eggDev %in% c(0,1,2)) %>%  group_by (year) %>% summarise (femValidEgg = n()) %>%# females with valid egg dev codes
-      left_join(awls %>% filter (sex == 2, eggDev %in% c(1,2)) %>%  group_by (year) %>% summarise (femWithEgg = n())) %>% #  females with eggs
+    awls %>% filter (Sex == 2, eggDev %in% c(0,1,2)) %>%  group_by (year) %>% summarise (femValidEgg = n()) %>%# females with valid egg dev codes
+      left_join(awls %>% filter (Sex == 2, eggDev %in% c(1,2)) %>%  group_by (year) %>% summarise (femWithEgg = n())) %>% #  females with eggs
       transmute (year, pOvig = femWithEgg/femValidEgg) -> ovigProp
   
   #join, reorder, format, and write 
@@ -150,8 +150,25 @@ k <- 2.20462 # kilogram to lb conversion factor
         geom_hline(yintercept = mean(meanLen_bth$len, na.rm=T),lty = 'dashed')
       ggsave("./figs/f4_surveyWideMeanCL.png", dpi=300, height=4., width=6.5, units="in")
     
-## F3.    
-    
+## F3. CL histogram, survey-wide ----    
+      pp %>% select(Event, site, Station, pot, perf) %>%   
+        right_join (awl)  %>% 
+        filter (site != 11, !Station %in% c("E","E1","E2"), 
+                perf == 1, species == 965, Sex %in% c('1','2')) %>% 
+      
+      ggplot(aes(cl, fill = Sex ))+ 
+        scale_fill_manual(values=c("#bdbdbd", "#636363"), labels = c('Male','Female'), 
+                          guide = guide_legend(direction = "horizontal")) +
+        facet_wrap(~year, ncol = 1, dir = 'v', strip.position="right", scale='free_y')+
+        geom_histogram(aes(y = ..count.. / sapply(PANEL, FUN=function(x) sum(count[PANEL == x]))),
+                       alpha=.8, bins=60, color = 1)+
+        ylab("Proportion")+
+        scale_y_continuous(breaks = seq(.01,.04,.03)) +
+        xlab("Carapace Length (mm)")+
+        scale_x_continuous(breaks = seq(10,55,5), limits = c(15,55))+
+        theme(panel.spacing.y = unit(0, "lines"), legend.title=element_blank(), 
+              legend.position = c(.87,-.04), legend.background = element_rect (fill = "transparent" ))          
+    #ggsave("./figs/CL_Hist_surv.png", dpi=300, height=8.7, width=6.5, units="in")
 
     
     
