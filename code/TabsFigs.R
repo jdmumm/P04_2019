@@ -168,7 +168,7 @@ k <- 2.20462 # kilogram to lb conversion factor
         scale_x_continuous(breaks = seq(10,55,5), limits = c(15,55))+
         theme(panel.spacing.y = unit(0, "lines"), legend.title=element_blank(), 
               legend.position = c(.87,-.04), legend.background = element_rect (fill = "transparent" ))          
-    #ggsave("./figs/CL_Hist_surv.png", dpi=300, height=8.7, width=6.5, units="in")
+    ggsave("./figs/fig3_CL_Hist_surv.png", dpi=300, height=8.7, width=6.5, units="in")
 
     
     
