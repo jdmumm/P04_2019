@@ -36,12 +36,56 @@ read.csv("data/yearArea_LUT.csv") -> yearAreaLUT
   #read.csv("data/femEggBySite.csv") -> egg # shouldn't be necesasry once convert to use awl file. 
 
 ## T2. Catch and CPUE, survey-wide ----
-cpue %>% transmute(year,N,
-                tau_all_lb = tau_all_kg * 2.20462, tau_all_cnt,
-                mu_all_lb = mu_all_kg * 2.20462, mu_all_cnt, 
-                tau_lrg_lb = tau_lrg_kg * 2.20462, tau_lrg_cnt,
-                mu_lrg_lb = mu_lrg_kg * 2.20462, mu_lrg_cnt) %>% 
+  cpue %>% transmute(year,N,
+                  tau_all_lb = tau_all_kg * 2.20462, tau_all_cnt,
+                  mu_all_lb = mu_all_kg * 2.20462, mu_all_cnt, 
+                  tau_lrg_lb = tau_lrg_kg * 2.20462, tau_lrg_cnt,
+                  mu_lrg_lb = mu_lrg_kg * 2.20462, mu_lrg_cnt) %>% 
   write.csv ('output/t2_catchAndCpue_surveywide.csv')
+
+## T3. Biological sex ratio, prob egg bearing, and mean survey-wide ---- 
+  # CL 
+    pp %>% select(Event, site, Station, pot, perf) %>%   
+      right_join (awl)  %>% 
+      filter (site != 11, !Station %in% c("E","E1","E2"), 
+              perf == 1, species == 965, sex %in% c(1,2)  ) -> awls  # excluding transitionals 
+    awls %>% group_by (year, sex)  %>% summarise( # issue where freq = 2 in 2005 for males, but since grouping by sex and virtually all males in 2005 were 2, ok as is 
+      n = n(),   
+      len = mean (cl), 
+      sd = var(cl)^.5,
+      se = sd/(n^.5))-> meanLen
+    
+    meanLen %>% select (year, sex, len) %>% spread(sex,len) -> cl #clunky, should rewrite 
+    meanLen %>% select (year, sex, n) %>% spread(sex,n) -> n 
+    meanLen %>% select (year, sex, sd) %>% spread(sex,sd) -> sd 
+    meanLen %>% select (year, sex, se) %>% spread(sex,se) -> se 
+    left_join (n,cl, by = 'year') %>% left_join(se, by = 'year') -> CL
+    colnames(CL) <- c('year','n_m', 'n_f', 'cl_m', 'cl_f', 'se_m', 'se_f') 
+  
+  # Sex proportions 
+    awls %>% group_by(year,sex) %>% summarise(cnt =  sum(freq)) %>%
+      spread(sex, cnt) -> sexCnt 
+    colnames(sexCnt) <- c('year','m','f') 
+    sexCnt %>% group_by(year) %>% summarise (pf = f/(m+f), pm = m/(m+f)) -> sexProp
+  
+  # Prop fems w eggs
+    awls %>% filter (sex == 2, eggDev %in% c(0,1,2)) %>%  group_by (year) %>% summarise (femValidEgg = n()) %>%# females with valid egg dev codes
+      left_join(awls %>% filter (sex == 2, eggDev %in% c(1,2)) %>%  group_by (year) %>% summarise (femWithEgg = n())) %>% #  females with eggs
+      transmute (year, pOvig = femWithEgg/femValidEgg) -> ovigProp
+  
+  #join, reorder, format, and write 
+    left_join(CL,sexProp) %>% left_join(ovigProp) %>% 
+      transmute(perMal = round(100 * pm,1), 
+                perFem = round(100 * pf, 1),
+                perOvi = round(100 * pOvig,1), 
+                cl_m = round(cl_m, 1),
+                n_m, 
+                se_m = round(se_m, 2), 
+                cl_f = round(cl_f, 1),
+                n_f,
+                se_f = round (se_f, 2)) -> bio 
+    write.csv(bio,"output/t3_sexEggPropCL.csv") # 1996 bio data are missing, use prev published values (1996, pM = 94.9, pf = 5.1; Wessel et al., 2015)
+
 ## T4. Catch and CPUE, byArea ----
   # Harvest - aggregate     
       harv %>% left_join (yearAreaLUT) %>% # join shrimpArea to harvest
@@ -57,34 +101,22 @@ cpue %>% transmute(year,N,
       #commercial values don't match those in draft 2017 report. Presumably mgmt overwrote values in report. 
 
 
+    
+    
+    
+    
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
 ## ASSEMBLE TABLES ON JRs LIST ####
 
 # CPUE (ALL_LB) by ShrimpArea and StatArea - both survey and harvest ----
