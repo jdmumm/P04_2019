@@ -27,6 +27,7 @@ read.csv("data/PWS Shrimp All.csv") %>% # from K:\MANAGEMENT\SHELLFISH\PWS Shrim
   select (year = DOL.Year, species = Species.Code, stat=Stat.Area, pots = Effort..sum., lbs = Whole.Weight..sum.) -> harv
 read.csv("data/SiteStatArea_LUT.csv") -> siteStatLUT
 read.csv("data/yearArea_LUT.csv") -> yearAreaLUT
+k <- 2.20462 # kilogram to lb conversion factor 
 
 # eventually delete, once fully converted to using point estimates from cpue.r not required. (190923)
   #read.csv("data/surveyWide_from16SS.csv") -> surv  #Survey-wide summary by year
@@ -37,10 +38,10 @@ read.csv("data/yearArea_LUT.csv") -> yearAreaLUT
 
 ## T2. Catch and CPUE, survey-wide ----
   cpue %>% transmute(year,N,
-                  tau_all_lb = tau_all_kg * 2.20462, tau_all_cnt,
-                  mu_all_lb = mu_all_kg * 2.20462, mu_all_cnt, 
-                  tau_lrg_lb = tau_lrg_kg * 2.20462, tau_lrg_cnt,
-                  mu_lrg_lb = mu_lrg_kg * 2.20462, mu_lrg_cnt) %>% 
+                  tau_all_lb = tau_all_kg * k, tau_all_cnt,
+                  mu_all_lb = mu_all_kg * k, mu_all_cnt, 
+                  tau_lrg_lb = tau_lrg_kg * k, tau_lrg_cnt,
+                  mu_lrg_lb = mu_lrg_kg * k, mu_lrg_cnt) %>% 
   write.csv ('output/t2_catchAndCpue_surveywide.csv')
 
 ## T3. Biological sex ratio, prob egg bearing, and mean survey-wide ---- 
@@ -93,11 +94,11 @@ read.csv("data/yearArea_LUT.csv") -> yearAreaLUT
       group_by (year,area) %>% summarize (cpueAllLb = sum(lbs)/sum(pots)) %>%
       dcast(year ~ area, value.var = "cpueAllLb") -> cpueByArea_h #Commercial cpue by area. 
   # Survey - select and reshape
-      cpue_area %>% transmute (year, Area, mu_all_lb = mu_all_kg * 2.20462)  %>%
+      cpue_area %>% transmute (year, Area, mu_all_lb = mu_all_kg * k)  %>%
         dcast(year ~ Area, value.var = "mu_all_lb") -> cpueByArea_s
   # Join harvest to survey and write  
     left_join(cpueByArea_s,cpueByArea_h, by = "year", suffix = c("_survey","_commerical")) -> cpueByArea
-    write.csv(cpueByArea,"output/t4_CPUEallLb_byArea.csv") #
+    write.csv(cpueByArea,"output/t4_CPUEallLb_byArea.csv") 
       #commercial values don't match those in draft 2017 report. Presumably mgmt overwrote values in report. 
 
 
@@ -106,6 +107,87 @@ read.csv("data/yearArea_LUT.csv") -> yearAreaLUT
     
     
 
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+## F1. Survey-wide CPUE plot ----
+  cpue 
+  str(cpue)  
+  
+  cpue %>% transmute(
+    year,
+    mu_all_lb = mu_all_kg * k,
+    se_all_lb = se_all_lb * k
+    lrg_lb = mu_lrg_kg * k, 
+    
+    
+  )  
+    
+    
+    read.csv('./P04_2017BOF/output/var_byYear_xz.csv') -> var_byYear 
+    var_byYear %>%  transmute (year,
+                               all = 2.20462 * se_all_kg,
+                               lrg = 2.20462 * se_lrg_kg) -> se_byYear 
+    se_byYear %>% gather(class, se, c(all, lrg)) -> se_byYear_l
+    #se_byYear_l[se_byYear_l$class == 'lrg', 'se']  <- 0  # omit error bars for larges
+    
+    surv %>% select (year = Year, all = CPUE_All_LB, lrg = CPUE_Large_LB) %>%
+      gather(class, cpue_lb, c(all, lrg)) -> surv_l
+    
+    
+    surv_l %>% group_by(class) %>% mutate (avg = mean(cpue_lb, na.rm = TRUE)) -> surv_l # calc longterm avgs
+    
+    surv_l %>% left_join(se_byYear_l) %>%
+      ggplot(aes(x = year, y = cpue_lb, group = class, colour = class) )+
+      scale_color_grey(start=.1, end=0.5,  name = '', labels = c("All Sizes", "Larges (>32mm)")) +
+      theme(legend.position = c(.2,.8)) +
+      scale_x_continuous(breaks = seq(1990,2016,2))  +
+      scale_y_continuous(breaks = seq(0,3,.5)) + 
+      labs( x= 'Year', y = 'Mean weight per pot (lb)') +
+      geom_point(size = 2)+ 
+      geom_line () +
+      geom_errorbar(aes(ymin=cpue_lb-se, ymax=cpue_lb+se, width = 0),position = position_dodge(width = 0.00)) + 
+      geom_hline(yintercept = unique(surv_l$avg), colour = grey(c(.1,.5)), lty = 'dashed')
+    
+    
+    ggsave("./figs/surveyWideCPUE_lbs_wVar_xz.png", dpi=300, height=4.0, width=6.5, units="in")    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     
     
     
