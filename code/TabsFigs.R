@@ -101,7 +101,7 @@ k <- 2.20462 # kilogram to lb conversion factor
     write.csv(cpueByArea,"output/t4_CPUEallLb_byArea.csv") 
       #commercial values don't match those in draft 2017 report. Presumably mgmt overwrote values in report. 
 
-## F1. Survey-wide CPUE plot ----
+## F1. CPUE, survey-wide ----
   # reshape cpue to long and convert to lb
     cpue %>% transmute(
         year,
@@ -128,38 +128,46 @@ k <- 2.20462 # kilogram to lb conversion factor
       geom_errorbar(aes(ymin=mu-se, ymax=mu+se, width = 0),position = position_dodge(width = 0.00)) + 
       geom_hline(yintercept = unique(cpue_l$avg), colour = grey(c(.1,.5)), lty = 'dashed')
     ggsave("./figs/f3_surveyWideCPUE.png", dpi=300, height=4.0, width=6.5, units="in")    
+## F2. CL, survey-wide ----
+    pp %>% select(Event, site, Station, pot, perf) %>%   
+      right_join (awl)  %>% 
+      filter (site != 11, !Station %in% c("E","E1","E2"), 
+              perf == 1, species == 965) %>% 
+      group_by(year) %>% summarise(    
+        n = n(),   
+        len = mean (cl), 
+        sd = var(cl)^.5,
+        se = sd/(n^.5))-> meanLen_bth
+      
+      ggplot(meanLen_bth, aes (x=year, y = len)) +
+        scale_x_continuous(breaks = seq(1990,2018,2))  +      
+        scale_y_continuous(breaks = seq(28,34,1)) +
+        labs( x= 'Year', y = 'Mean CL (mm)') +
+        geom_point(size = 2)+
+        geom_line()+
+        geom_errorbar(aes(ymin=len-se, ymax=len+se, width = 0)) + 
+        geom_hline(yintercept = mean(meanLen_bth$len, na.rm=T),lty = 'dashed')
+      ggsave("./figs/f4_surveyWideCL.png", dpi=300, height=4., width=6.5, units="in")
     
     
-    
-    read.csv('./P04_2017BOF/output/var_byYear_xz.csv') -> var_byYear 
-    var_byYear %>%  transmute (year,
-                               all = 2.20462 * se_all_kg,
-                               lrg = 2.20462 * se_lrg_kg) -> se_byYear 
-    se_byYear %>% gather(class, se, c(all, lrg)) -> se_byYear_l
-    
-    
-    
-    surv %>% select (year = Year, all = CPUE_All_LB, lrg = CPUE_Large_LB) %>%
-      gather(class, cpue_lb, c(all, lrg)) -> surv_l
-    
-    
-    surv_l %>% group_by(class) %>% mutate (avg = mean(cpue_lb, na.rm = TRUE)) -> surv_l # calc longterm avgs
-    
-    surv_l %>% left_join(se_byYear_l) %>%
-      ggplot(aes(x = year, y = cpue_lb, group = class, colour = class) )+
-      scale_color_grey(start=.1, end=0.5,  name = '', labels = c("All Sizes", "Larges (>32mm)")) +
-      theme(legend.position = c(.2,.8)) +
-      scale_x_continuous(breaks = seq(1990,2016,2))  +
-      scale_y_continuous(breaks = seq(0,3,.5)) + 
-      labs( x= 'Year', y = 'Mean weight per pot (lb)') +
-      geom_point(size = 2)+ 
-      geom_line () +
-      geom_errorbar(aes(ymin=cpue_lb-se, ymax=cpue_lb+se, width = 0),position = position_dodge(width = 0.00)) + 
-      geom_hline(yintercept = unique(surv_l$avg), colour = grey(c(.1,.5)), lty = 'dashed')
+    meanLen_byArea_bth %>% group_by(ShrimpArea) %>% summarise(avg = mean(len, na.rm = TRUE)) -> avgs
+    labels <- c('1' = "Area 1", '2' = "Area 2", '3' = "Area 3")
+    A <- ggplot(data = meanLen_byArea_bth,
+                aes (x=year, y = len)) +
+      scale_x_continuous(breaks = seq(1990,2016,2))  +      
+      theme( axis.text.x  = element_text(angle=90, vjust=0.5)) +
+      scale_y_continuous(breaks = seq(27,38,1)) +
+      labs( x= 'Year', y = 'Mean CL (mm)')+
+      geom_point()+
+      geom_line()+ 
+      facet_wrap(~ShrimpArea, labeller=labeller(ShrimpArea = labels)) +
+      geom_errorbar(aes(ymin=len-se, ymax=len+se, width = 0))+
+      geom_hline(aes(yintercept = avg) , avgs, lty = 'dashed')
+    A
+    #ggsave("./figs/areaCL.png", dpi=300, height=2.9, width=9, units="in")    
     
     
-    ggsave("./figs/surveyWideCPUE_lbs_wVar_xz.png", dpi=300, height=4.0, width=6.5, units="in")    
-    
+
     
     
     
