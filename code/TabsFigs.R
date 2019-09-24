@@ -128,7 +128,8 @@ k <- 2.20462 # kilogram to lb conversion factor
       geom_errorbar(aes(ymin=mu-se, ymax=mu+se, width = 0),position = position_dodge(width = 0.00)) + 
       geom_hline(yintercept = unique(cpue_l$avg), colour = grey(c(.1,.5)), lty = 'dashed')
     ggsave("./figs/f3_surveyWideCPUE.png", dpi=300, height=4.0, width=6.5, units="in")    
-## F2. CL, survey-wide ----
+
+## F2. Mean CL, survey-wide ----
     pp %>% select(Event, site, Station, pot, perf) %>%   
       right_join (awl)  %>% 
       filter (site != 11, !Station %in% c("E","E1","E2"), 
@@ -147,25 +148,9 @@ k <- 2.20462 # kilogram to lb conversion factor
         geom_line()+
         geom_errorbar(aes(ymin=len-se, ymax=len+se, width = 0)) + 
         geom_hline(yintercept = mean(meanLen_bth$len, na.rm=T),lty = 'dashed')
-      ggsave("./figs/f4_surveyWideCL.png", dpi=300, height=4., width=6.5, units="in")
+      ggsave("./figs/f4_surveyWideMeanCL.png", dpi=300, height=4., width=6.5, units="in")
     
-    
-    meanLen_byArea_bth %>% group_by(ShrimpArea) %>% summarise(avg = mean(len, na.rm = TRUE)) -> avgs
-    labels <- c('1' = "Area 1", '2' = "Area 2", '3' = "Area 3")
-    A <- ggplot(data = meanLen_byArea_bth,
-                aes (x=year, y = len)) +
-      scale_x_continuous(breaks = seq(1990,2016,2))  +      
-      theme( axis.text.x  = element_text(angle=90, vjust=0.5)) +
-      scale_y_continuous(breaks = seq(27,38,1)) +
-      labs( x= 'Year', y = 'Mean CL (mm)')+
-      geom_point()+
-      geom_line()+ 
-      facet_wrap(~ShrimpArea, labeller=labeller(ShrimpArea = labels)) +
-      geom_errorbar(aes(ymin=len-se, ymax=len+se, width = 0))+
-      geom_hline(aes(yintercept = avg) , avgs, lty = 'dashed')
-    A
-    #ggsave("./figs/areaCL.png", dpi=300, height=2.9, width=9, units="in")    
-    
+## F3.    
     
 
     
