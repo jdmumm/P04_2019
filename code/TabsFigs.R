@@ -101,35 +101,34 @@ k <- 2.20462 # kilogram to lb conversion factor
     write.csv(cpueByArea,"output/t4_CPUEallLb_byArea.csv") 
       #commercial values don't match those in draft 2017 report. Presumably mgmt overwrote values in report. 
 
-
-    
-    
-    
-    
-
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
 ## F1. Survey-wide CPUE plot ----
-  cpue 
-  str(cpue)  
-  
-  cpue %>% transmute(
-    year,
-    mu_all_lb = mu_all_kg * k,
-    se_all_lb = se_all_lb * k
-    lrg_lb = mu_lrg_kg * k, 
+  # reshape cpue to long and convert to lb
+    cpue %>% transmute(
+        year,
+        all = mu_all_kg * k,
+        lrg = mu_lrg_kg * k) %>% 
+      gather(class, mu, c(all, lrg)) %>% 
+    left_join(  
+      cpue %>% transmute(
+          year,
+          all = se_all_kg * k,
+          lrg = se_lrg_kg * k) %>% 
+        gather(class, se, c(all, lrg))) -> cpue_l
+  # calc longterm avgs 
+    cpue_l %>% group_by(class) %>% mutate (avg = mean(mu, na.rm = TRUE)) -> cpue_l
+  # plot 
+    cpue_l %>% ggplot(aes(x = year, y = mu, group = class, colour = class) )+
+      scale_color_grey(start=.1, end=0.5,  name = '', labels = c("All Sizes", "Larges (>32mm)")) +
+      theme(legend.position = c(.2,.8)) +
+      scale_x_continuous(breaks = seq(1990,2018,2))  +
+      scale_y_continuous(breaks = seq(0,3,.5)) + 
+      labs( x= 'Year', y = 'Mean weight per pot (lb)') +
+      geom_point(size = 2)+ 
+      geom_line () +
+      geom_errorbar(aes(ymin=mu-se, ymax=mu+se, width = 0),position = position_dodge(width = 0.00)) + 
+      geom_hline(yintercept = unique(cpue_l$avg), colour = grey(c(.1,.5)), lty = 'dashed')
+    ggsave("./figs/f3_surveyWideCPUE.png", dpi=300, height=4.0, width=6.5, units="in")    
     
-    
-  )  
     
     
     read.csv('./P04_2017BOF/output/var_byYear_xz.csv') -> var_byYear 
@@ -137,7 +136,8 @@ k <- 2.20462 # kilogram to lb conversion factor
                                all = 2.20462 * se_all_kg,
                                lrg = 2.20462 * se_lrg_kg) -> se_byYear 
     se_byYear %>% gather(class, se, c(all, lrg)) -> se_byYear_l
-    #se_byYear_l[se_byYear_l$class == 'lrg', 'se']  <- 0  # omit error bars for larges
+    
+    
     
     surv %>% select (year = Year, all = CPUE_All_LB, lrg = CPUE_Large_LB) %>%
       gather(class, cpue_lb, c(all, lrg)) -> surv_l
