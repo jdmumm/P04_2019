@@ -101,7 +101,7 @@ k <- 2.20462 # kilogram to lb conversion factor
     write.csv(cpueByArea,"output/t4_CPUEallLb_byArea.csv") 
       #commercial values don't match those in draft 2017 report. Presumably mgmt overwrote values in report. 
 
-## F1. CPUE, survey-wide ----
+## F3. CPUE, survey-wide ----
   # reshape cpue to long and convert to lb
     cpue %>% transmute(
         year,
@@ -129,7 +129,7 @@ k <- 2.20462 # kilogram to lb conversion factor
       geom_hline(yintercept = unique(cpue_l$avg), colour = grey(c(.1,.5)), lty = 'dashed')
     ggsave("./figs/f3_surveyWideCPUE.png", dpi=300, height=4.0, width=6.5, units="in")    
 
-## F2. Mean CL, survey-wide ----
+## F4. Mean CL, survey-wide ----
     pp %>% select(Event, site, Station, pot, perf) %>%   
       right_join (awl)  %>% 
       filter (site != 11, !Station %in% c("E","E1","E2"), 
@@ -150,7 +150,7 @@ k <- 2.20462 # kilogram to lb conversion factor
         geom_hline(yintercept = mean(meanLen_bth$len, na.rm=T),lty = 'dashed')
       ggsave("./figs/f4_surveyWideMeanCL.png", dpi=300, height=4., width=6.5, units="in")
     
-## F3. CL histogram, survey-wide ----    
+## F5. CL histogram, survey-wide ----    
       pp %>% select(Event, site, Station, pot, perf) %>%   
         right_join (awl)  %>% 
         filter (site != 11, !Station %in% c("E","E1","E2"), 
@@ -168,35 +168,29 @@ k <- 2.20462 # kilogram to lb conversion factor
         scale_x_continuous(breaks = seq(10,55,5), limits = c(15,55))+
         theme(panel.spacing.y = unit(0, "lines"), legend.title=element_blank(), 
               legend.position = c(.87,-.04), legend.background = element_rect (fill = "transparent" ))          
-    ggsave("./figs/fig3_CL_Hist_surv.png", dpi=300, height=8.7, width=6.5, units="in")
+      ggsave("./figs/f5_CL_Hist_surv.png", dpi=300, height=8.7, width=6.5, units="in")
 
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
+## F8. Prop fem, survey-wide
+      pp %>% select(Event, site, Station, pot, perf) %>%   
+        right_join (awl)  %>% 
+        filter (site != 11, !Station %in% c("E","E1","E2"), 
+                perf == 1, species == 965, Sex %in% c('1','2')) %>% 
+      group_by(year,Sex) %>% summarise(cnt =  sum(freq)) %>%
+      spread(Sex, cnt) -> wid 
+      colnames(wid) <- c('year','m','f')
+      wid %>% group_by(year) %>% summarise (pf = f/(m+f)) -> pfem
+      
+      avg <- mean(pfem$pf) # calc longterm avg
+      
+      pfem %>% ggplot(aes(x = year, y = pf) ) +
+        scale_x_continuous(breaks = seq(1990,2018,2))  +
+        scale_y_continuous(breaks = seq(0,.4,.1)) +
+        labs( x= 'Year', y = 'Female proportion') +
+        geom_point(size = 2)+ 
+        geom_line () +
+        geom_hline(yintercept = avg, lty = 'dashed')
+      
+      ggsave("./figs/propFem.png", dpi=300, height=3.5, width=6.25, units="in")
     
     
     
