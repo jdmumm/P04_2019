@@ -6,7 +6,7 @@
 # major changes include switch to use point estimates from CPUE.R rather than
 # spreadsheet based on Access queries as KG and JR insisted in 2017.  
 
-## Load ----
+## Load and Prep ----
 library(tidyverse)
 library(reshape2) # ought to reshape with tidyr instead, so not required. 
 library(extrafont)
@@ -21,7 +21,11 @@ read.csv('output/cpue_byArea.csv') -> cpue_area # catch and cpue from cpue.r, by
 read.csv('data/AWL_190920.csv') %>% 
          transmute(year = YEAR, Event = EVENT_ID, site = SITE_ID, Station = STATION_ID, pot = POT_ID, species = FK_SPECIES_CODE,
          Sex = as.factor (FK_SEX_CODE), freq = FREQUENCY, cl = CARAPACE_LENGTH_MM, wt = WEIGHT_GRAMS, eggDev = SHRIMP_EGG_DEVEL_CODE, 
-         breed = SHRIMP_BREEDING_CODE, eggCol = SHRIMP_EGG_COLOR_CODE, eggDead = SHRIMP_DEAD_EGG_COUNT, parasite = SHRIMP_PARASITE_CODE) -> awl
+         breed = SHRIMP_BREEDING_CODE, eggCol = SHRIMP_EGG_COLOR_CODE, eggDead = SHRIMP_DEAD_EGG_COUNT, parasite = SHRIMP_PARASITE_CODE) -> awl 
+  #Replicate freq 2s - these are from 2005 when only half males were measured. 
+    awl %>% filter(freq == 2) -> twos
+    rbind(awl,twos) -> awl
+    awl$freq <- 1  
 read.csv('data/potPerformance_190920.csv') %>% select( Event = EVENT_ID, site = SITE_ID, pot = POT_ID, Station = STATION, perf = FK_GEAR_PERFORMANCE_CODE, 
                                                         gearComment = GEAR_COMMENTS, sample = SAMPLE_POT ) -> pp 
 read.csv("data/PWS Shrimp All.csv") %>% # from K:\MANAGEMENT\SHELLFISH\PWS Shrimp All.xlsx. Through 2017, ask CR for update with 18 & 19. 
@@ -37,7 +41,7 @@ k <- 2.20462 # kilogram to lb conversion factor
   #         lrg_cnt = Est_Count_LG, lrg_lb = Est_Wt_Large * 2.20462, cpue_all_lbs = CPUE_All_LB, cpue_all_cnt = CPUE_All_Count, cpue_lrg_cnt=CPUE_Large_Count) ->site
   #read.csv("data/femEggBySite.csv") -> egg # shouldn't be necesasry once convert to use awl file. 
 
-## T2. Catch and CPUE, survey-wide ----
+## T2. Catch and CPUE, surveyWide ----
   cpue %>% transmute(year,N,
                   tau_all_lb = tau_all_kg * k, tau_all_cnt,
                   mu_all_lb = mu_all_kg * k, mu_all_cnt, 
@@ -102,7 +106,7 @@ k <- 2.20462 # kilogram to lb conversion factor
     write.csv(cpueByArea,"output/t4_CPUEallLb_byArea.csv") 
       #commercial values don't match those in draft 2017 report. Presumably mgmt overwrote values in report. 
 
-## F3. CPUE, survey-wide ----
+## F3. CPUE, surveyWide ----
   # reshape cpue to long and convert to lb
     cpue %>% transmute(
         year,
@@ -130,7 +134,7 @@ k <- 2.20462 # kilogram to lb conversion factor
       geom_hline(yintercept = unique(cpue_l$avg), colour = grey(c(.1,.5)), lty = 'dashed')
     ggsave("./figs/f3_CPUE_surveyWide.png", dpi=300, height=4.0, width=6.5, units="in")    
 
-## F4. Mean CL, survey-wide ----
+## F4. Mean CL, surveyWide ----
   pp %>% select(Event, site, Station, pot, perf) %>%   
     right_join (awl)  %>% 
     filter (site != 11, !Station %in% c("E","E1","E2"), 
@@ -151,9 +155,9 @@ k <- 2.20462 # kilogram to lb conversion factor
       geom_hline(yintercept = mean(meanLen_bth$len, na.rm=T),lty = 'dashed')
     ggsave("./figs/f4_meanCL.png", dpi=300, height=4., width=6.5, units="in")
     
-## F5. CL histograms, survey-wide ----    
+## F5. CL histograms, surveyWide ----    
   pp %>% select(Event, site, Station, pot, perf) %>%   
-    right_join (awl)  %>% 
+    right_join (awl)  %>%
     filter (site != 11, !Station %in% c("E","E1","E2"), 
             perf == 1, species == 965, Sex %in% c('1','2')) %>% # excluding transitionals
   
@@ -172,7 +176,7 @@ k <- 2.20462 # kilogram to lb conversion factor
   
     ggsave("./figs/f5_CL_Hist_surv.png", dpi=300, height=8.7, width=6.5, units="in")
 
-## F8. Prop fem, survey-wide ----
+## F8. Prop fem, surveyWide ----
   pp %>% select(Event, site, Station, pot, perf) %>%   
     right_join (awl)  %>% 
     filter (site != 11, !Station %in% c("E","E1","E2"), 
@@ -265,41 +269,7 @@ k <- 2.20462 # kilogram to lb conversion factor
       
       
       
-      
-      read.csv('./P04_2017BOF/output/var_byArea_xz.csv') -> var_byArea
-      var_byArea %>%  transmute (year, 
-                                 ShrimpArea = as.factor(Area),
-                                 all = 2.20462 * se_all_kg,
-                                 lrg = 2.20462 * se_lrg_kg) -> se_byArea 
-      se_byArea %>% gather(class, se, c(all, lrg)) -> se_byArea_l
-      #se_byArea_l[se_byArea_l$class == 'lrg', 'se']  <- 0  # omit error bars for larges
-      
-      cpueByArea %>% select (year = year, ShrimpArea, all = cpueAllLb, lrg = cpueLrgLb)  %>%  
-        gather(class, cpue_lb, c(all,lrg)) -> cpueByArea_l
-      
-      cpueByArea_l %>% group_by(class, ShrimpArea) %>% summarise (avg = mean(cpue_lb, na.rm = TRUE))-> avgs # calc longterm avgs
-      #Specific values included in resultes
-      cpueByArea_l %>% filter (ShrimpArea == '1', class == 'lrg', year > 2004) %>% group_by(ShrimpArea) %>% summarise (avg =  mean(cpue_lb, na.rm = T))
-      cpueByArea_l %>% filter (ShrimpArea == '1', class == 'lrg', year < 2004) %>% group_by(ShrimpArea) %>% summarise (avg =  mean(cpue_lb, na.rm = T))
-      cpueByArea_l %>% filter (class == 'all') %>% group_by(ShrimpArea) %>% summarise (avg =  mean(cpue_lb, na.rm = T))
-      
-      labels <- c('1' = "Area 1", '2' = "Area 2", '3' = "Area 3")
-      
-      cpueByArea_l %>% left_join(se_byArea_l) %>%    
-        ggplot(aes(x = year, y = cpue_lb, group = class, colour = class) ) +
-        scale_color_grey(start=.1, end=0.5,  name = '', labels = c("All Sizes", "Larges (>32mm)")) +
-        theme(legend.position = c(.85,.8), legend.background = element_rect (fill = "transparent" )) +
-        scale_x_continuous(breaks = seq(1990,2016,2))  +
-        scale_y_continuous(breaks = seq(0,4,.5)) + 
-        labs( x= 'Year', y = 'Mean weight per pot (lb)') +
-        geom_point(size = 1.5)+ 
-        geom_line ()  +
-        geom_errorbar(aes(ymin=cpue_lb-se, ymax=cpue_lb+se, width = 0), position = position_dodge(width = 0.0)) + 
-        theme( axis.text.x  = element_text(angle=90, vjust=0.5)) +
-        facet_wrap(~ShrimpArea, ncol=3, labeller=labeller(ShrimpArea = labels)) +
-        geom_hline(aes (yintercept = avg), avgs, colour = rep(grey(c(.1,.5)),3), lty = 'dashed')
-      
-      #ggsave("./figs/areaCPUE_lbs_w_wVar_xz.png", dpi=300, height=2.9, width=9, units="in")      
+     
       
       
       
@@ -360,7 +330,7 @@ k <- 2.20462 # kilogram to lb conversion factor
       sd = var(cl)^.5,
       se = sd/(n^.5))-> meanLen_byArea
   
-  meanLen_byArea_bth %>% group_by(ShrimpArea) %>% summarise(avg = mean(len, na.rm = TRUE)) -> avgs
+  meanLen_byArea %>% group_by(ShrimpArea) %>% summarise(avg = mean(len, na.rm = TRUE)) -> avgs
   
   labels <- c('1' = "Area 1", '2' = "Area 2", '3' = "Area 3")
   
@@ -377,6 +347,7 @@ k <- 2.20462 # kilogram to lb conversion factor
     geom_hline(aes(yintercept = avg) , avgs, lty = 'dashed')
   
   ggsave("./figs/f11_meanCL_byArea.png", dpi=300, height=2.9, width=9, units="in")
+
 ## F12. CL histograms, byArea ----
   pp %>% select(Event, site, Station, pot, perf) %>%   
     right_join (awl)  %>% 
@@ -398,3 +369,6 @@ k <- 2.20462 # kilogram to lb conversion factor
           legend.position = c(.87,-.04), legend.background = element_rect (fill = "transparent" ))   
   
   ggsave("./figs/f12_CL_Hist_byArea.png", dpi=300, height=8.7, width=6.5, units="in")  
+
+## F6. L50, surveyWide----
+  
