@@ -202,7 +202,6 @@ k <- 2.20462 # kilogram to lb conversion factor
         spread(Sex, cnt) -> wid
         colnames(wid) <- c('area','year','m','f') 
         wid  %>% group_by(area, year) %>% transmute (pf = f/m) -> pfem_a
-        droplevels(pfem_a) -> pfem_a  # remove na level of area to eliminate from plot
         
       pfem_a %>% group_by(area) %>% summarise (avg = mean(pf, na.rm = T))-> avgs # calc longterm avgs
       labels <- c('1' = "Area 1", '2' = "Area 2", '3' = "Area 3")
@@ -218,7 +217,7 @@ k <- 2.20462 # kilogram to lb conversion factor
         facet_wrap(~area, ncol=1, strip.position="right", labeller=labeller(area = labels)) + 
         geom_hline(aes (yintercept = avg), avgs, lty = 'dashed')
       
-      ggsave("./figs/propFemByArea.png", dpi=300, height=4.5, width=6.5, units="in")
+      ggsave("./figs/f9_propFem_area.png", dpi=300, height=4.5, width=6.5, units="in")
     
     
     
