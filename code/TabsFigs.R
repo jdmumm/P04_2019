@@ -170,7 +170,7 @@ k <- 2.20462 # kilogram to lb conversion factor
               legend.position = c(.87,-.04), legend.background = element_rect (fill = "transparent" ))          
       ggsave("./figs/f5_CL_Hist_surv.png", dpi=300, height=8.7, width=6.5, units="in")
 
-## F8. Prop fem, survey-wide
+## F8. Prop fem, survey-wide ----
       pp %>% select(Event, site, Station, pot, perf) %>%   
         right_join (awl)  %>% 
         filter (site != 11, !Station %in% c("E","E1","E2"), 
@@ -190,7 +190,35 @@ k <- 2.20462 # kilogram to lb conversion factor
         geom_line () +
         geom_hline(yintercept = avg, lty = 'dashed')
       
-      ggsave("./figs/propFem.png", dpi=300, height=3.5, width=6.25, units="in")
+      ggsave("./figs/f8_propFem_surv.png", dpi=300, height=3.5, width=6.25, units="in")
+
+## F9. Prop fem, by area ----
+      pp %>% select(Event, site, Station, pot, perf) %>%   
+        right_join (awl)  %>% 
+        filter (site != 11, !Station %in% c("E","E1","E2"), 
+                perf == 1, species == 965, Sex %in% c('1','2')) %>% 
+        left_join (siteStatLUT, by = c("site"="SiteNum")) %>% 
+        group_by(ShrimpArea, year,Sex) %>% summarise(cnt =  sum(freq)) %>%
+        spread(Sex, cnt) -> wid
+        colnames(wid) <- c('area','year','m','f') 
+        wid  %>% group_by(area, year) %>% transmute (pf = f/m) -> pfem_a
+        droplevels(pfem_a) -> pfem_a  # remove na level of area to eliminate from plot
+        
+      pfem_a %>% group_by(area) %>% summarise (avg = mean(pf, na.rm = T))-> avgs # calc longterm avgs
+      labels <- c('1' = "Area 1", '2' = "Area 2", '3' = "Area 3")
+      
+      pfem_a %>% ggplot(aes(x = year, y = pf)) +
+        scale_x_continuous(breaks = seq(1990,2018,2))  +
+        scale_y_continuous(breaks = seq(0,.65,.1)) + 
+        labs( x= 'Year', y = 'Female proportion') +
+        ylim(0,.65) +
+        geom_point(size = 1.5)+ 
+        geom_line () +
+        theme( axis.text.x  = element_text(angle=0, vjust=0.5)) +
+        facet_wrap(~area, ncol=1, strip.position="right", labeller=labeller(area = labels)) + 
+        geom_hline(aes (yintercept = avg), avgs, lty = 'dashed')
+      
+      ggsave("./figs/propFemByArea.png", dpi=300, height=4.5, width=6.5, units="in")
     
     
     
