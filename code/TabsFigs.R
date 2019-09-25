@@ -44,7 +44,7 @@ k <- 2.20462 # kilogram to lb conversion factor
                   mu_lrg_lb = mu_lrg_kg * k, mu_lrg_cnt) %>% 
   write.csv ('output/t2_catchAndCpue_surveywide.csv')
 
-## T3. Biological sex ratio, prob egg bearing, and mean survey-wide ---- 
+## T3. Biological sex ratio, prop ovigerous, and mean survey-wide ---- 
   # CL 
     pp %>% select(Event, site, Station, pot, perf) %>%   
       right_join (awl)  %>% 
@@ -69,7 +69,7 @@ k <- 2.20462 # kilogram to lb conversion factor
     colnames(sexCnt) <- c('year','m','f') 
     sexCnt %>% group_by(year) %>% summarise (pf = f/(m+f), pm = m/(m+f)) -> sexProp
   
-  # Prop fems w eggs
+  # Prop ovigerous 
     awls %>% filter (Sex == 2, eggDev %in% c(0,1,2)) %>%  group_by (year) %>% summarise (femValidEgg = n()) %>%# females with valid egg dev codes
       left_join(awls %>% filter (Sex == 2, eggDev %in% c(1,2)) %>%  group_by (year) %>% summarise (femWithEgg = n())) %>% #  females with eggs
       transmute (year, pOvig = femWithEgg/femValidEgg) -> ovigProp
@@ -343,3 +343,27 @@ k <- 2.20462 # kilogram to lb conversion factor
   
   ggsave("./figs/f12_CL_Hist_byArea.png", dpi=300, height=8.7, width=6.5, units="in")  
 
+
+## apxC1. Ovig, by stat area  ----
+  pp %>% select(Event, site, Station, pot, perf) %>%   
+    right_join (awl)  %>% 
+    filter (!Station %in% c("E","E1","E2"), 
+            perf == 1, species == 965) %>% 
+    left_join (siteStatLUT, by = c('site' = 'SiteNum')) -> awls   
+
+    # Prop ovigerous by stat 
+    awls %>% filter (Sex == 2, eggDev %in% c(0,1,2)) %>%  group_by (year, StatArea) %>% summarise (femValidEgg = n()) %>% # females with valid egg dev codes
+    left_join (awls %>% filter (Sex == 2, eggDev %in% c(1,2)) %>%  group_by (year, StatArea) %>% summarise (femWithEgg = n())) %>% #  females with eggs
+    mutate (pOvig = femWithEgg/femValidEgg) %>% select(year,StatArea,pOvig) %>% 
+    spread(StatArea,pOvig) -> pOvig_byStat
+    
+    # Prop ovigerous, surveywide  
+    awls %>% filter (site != 11, Sex == 2, eggDev %in% c(0,1,2)) %>%  group_by (year) %>% summarise (femValidEgg = n()) %>% # valdez excluded 
+      left_join (awls %>% filter (site != 11,Sex == 2, eggDev %in% c(1,2)) %>%  group_by (year) %>% summarise (femWithEgg = n())) %>% 
+      mutate (pOvig = femWithEgg/femValidEgg)  %>% select(year,surveyWide = pOvig)-> pOvig_surveyWide
+    
+    # join by stat to surveywide
+    pOvig_byStat %>% left_join(pOvig_surveyWide) -> pOvig # Percent of females with eggs by stat area and year w surveywide. Vldz excluded from surveywide.
+  
+    write.csv(pOvig,"output/apxC1_ovigByStat.csv") # note ovigerity data from 95-97 are missing. 
+  
