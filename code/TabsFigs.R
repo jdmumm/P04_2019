@@ -1,6 +1,7 @@
 ## TabsFigs ####
 # Josh Mumm 190920
-# assembles tables and figures for P04 FDS report
+# tables and figures for P04 FDS report
+# run CPUE.r first to create cpue output tables
 # modified from P04_2017BOF/TabsFigs_WVarFigs.R which was used for 2017 report  
 # major changes include switch to use point estimates from CPUE.R rather than
 # spreadsheet based on Access queries as KG and JR insisted in 2017.  
@@ -150,11 +151,11 @@ k <- 2.20462 # kilogram to lb conversion factor
       geom_hline(yintercept = mean(meanLen_bth$len, na.rm=T),lty = 'dashed')
     ggsave("./figs/f4_meanCL.png", dpi=300, height=4., width=6.5, units="in")
     
-## F5. CL histogram, survey-wide ----    
+## F5. CL histograms, survey-wide ----    
   pp %>% select(Event, site, Station, pot, perf) %>%   
     right_join (awl)  %>% 
     filter (site != 11, !Station %in% c("E","E1","E2"), 
-            perf == 1, species == 965, Sex %in% c('1','2')) %>% 
+            perf == 1, species == 965, Sex %in% c('1','2')) %>% # excluding transitionals
   
   ggplot(aes(cl, fill = Sex ))+ 
     scale_fill_manual(values=c("#bdbdbd", "#636363"), labels = c('Male','Female'), 
@@ -168,7 +169,8 @@ k <- 2.20462 # kilogram to lb conversion factor
     scale_x_continuous(breaks = seq(10,55,5), limits = c(15,55))+
     theme(panel.spacing.y = unit(0, "lines"), legend.title=element_blank(), 
           legend.position = c(.87,-.04), legend.background = element_rect (fill = "transparent" ))          
-  ggsave("./figs/f5_CL_Hist_surv.png", dpi=300, height=8.7, width=6.5, units="in")
+  
+    ggsave("./figs/f5_CL_Hist_surv.png", dpi=300, height=8.7, width=6.5, units="in")
 
 ## F8. Prop fem, survey-wide ----
   pp %>% select(Event, site, Station, pot, perf) %>%   
@@ -192,7 +194,7 @@ k <- 2.20462 # kilogram to lb conversion factor
   
   ggsave("./figs/f8_propFem_surv.png", dpi=300, height=3.5, width=6.25, units="in")
 
-## F9. Prop fem, by area ----
+## F9. Prop fem, byArea ----
   pp %>% select(Event, site, Station, pot, perf) %>%   
     right_join (awl)  %>% 
     filter (site != 11, !Station %in% c("E","E1","E2"), 
@@ -219,7 +221,7 @@ k <- 2.20462 # kilogram to lb conversion factor
   
   ggsave("./figs/f9_propFem_area.png", dpi=300, height=4.5, width=6.5, units="in")
  
-## F10. CPUE, by area ----
+## F10. CPUE, byArea ----
   # reshape cpue to long and convert to lb  
     cpue_area %>% transmute(
       Area,
@@ -346,7 +348,7 @@ k <- 2.20462 # kilogram to lb conversion factor
       
       
             
-## F11. Mean CL, by area
+## F11. Mean CL, byArea ----
   pp %>% select(Event, site, Station, pot, perf) %>%   
     right_join (awl)   %>% 
     filter (site != 11, !Station %in% c("E","E1","E2"), 
@@ -375,6 +377,24 @@ k <- 2.20462 # kilogram to lb conversion factor
     geom_hline(aes(yintercept = avg) , avgs, lty = 'dashed')
   
   ggsave("./figs/f11_meanCL_byArea.png", dpi=300, height=2.9, width=9, units="in")
+## F12. CL histograms, byArea ----
+  pp %>% select(Event, site, Station, pot, perf) %>%   
+    right_join (awl)  %>% 
+    filter (site != 11, !Station %in% c("E","E1","E2"), 
+            perf == 1, species == 965, Sex %in% c('1','2')) %>% # excluding transitionals
+    left_join (siteStatLUT, by = c('site' ='SiteNum')) %>% 
   
-    
-      
+    ggplot(aes(cl, fill = Sex)) +
+    scale_fill_manual(values=c("#bdbdbd", "#636363"), labels = c('Male','Female'), 
+                      guide = guide_legend(direction = "horizontal")) +   
+    geom_histogram(aes(y = ..count.. / sapply(PANEL, FUN=function(x) sum(count[PANEL == x]))),
+                   alpha=.8, bins=60, color = 1)+
+    facet_grid(year ~ ShrimpArea, scale='free_y',labeller=labeller(ShrimpArea = labels)) +
+    scale_x_continuous(breaks = seq(10,55,5), limits = c(15,55))+
+    ylab("Proportion")+
+    scale_y_continuous(breaks = seq(.02,.06,.04)) +
+    xlab("Carapace Length (mm)")+
+    theme(panel.spacing.y = unit(0, "lines"), legend.title=element_blank(), 
+          legend.position = c(.87,-.04), legend.background = element_rect (fill = "transparent" ))   
+  
+  ggsave("./figs/f12_CL_Hist_byArea.png", dpi=300, height=8.7, width=6.5, units="in")  
