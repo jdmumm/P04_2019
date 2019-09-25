@@ -2,7 +2,7 @@
 # Josh Mumm # 190925
 # estimate length at 50% fem using logistic regression
 # Sloppy, could use much tidying 
-# Clunky, manually change area 1:3 in prep filter for by area file 
+# Clunky, manually change area 1:3 in prep filter and last lines for by area file 
 
 #LOAD ----
 library(tidyverse)
