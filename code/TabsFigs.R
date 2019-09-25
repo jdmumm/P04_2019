@@ -32,14 +32,9 @@ read.csv("data/PWS Shrimp All.csv") %>% # from K:\MANAGEMENT\SHELLFISH\PWS Shrim
   select (year = DOL.Year, species = Species.Code, stat=Stat.Area, pots = Effort..sum., lbs = Whole.Weight..sum.) -> harv
 read.csv("data/SiteStatArea_LUT.csv") -> siteStatLUT
 read.csv("data/yearArea_LUT.csv") -> yearAreaLUT
+read.csv('output/f50_surveyWide.csv') %>% select(year = yrs, f50) -> l50 
+read.csv('output/f50_byArea.csv') %>% select (year, 'Area 1' = f50_1, 'Area 2' = f50_2, 'Area 3' = f50_3) -> l50_a
 k <- 2.20462 # kilogram to lb conversion factor 
-
-# eventually delete, once fully converted to using point estimates from cpue.r not required. (190923)
-  #read.csv("data/surveyWide_from16SS.csv") -> surv  #Survey-wide summary by year
-  #read.csv("data/bySite_from16SS.csv")%>%
-  #  transmute(year = Year, site = Site_ID, pots = Pot_Count, all_cnt = Total_Spot_Count, all_lb = Total_Spot_Wt_KG * 2.20462, propLrg = Proportion_Large, 
-  #         lrg_cnt = Est_Count_LG, lrg_lb = Est_Wt_Large * 2.20462, cpue_all_lbs = CPUE_All_LB, cpue_all_cnt = CPUE_All_Count, cpue_lrg_cnt=CPUE_Large_Count) ->site
-  #read.csv("data/femEggBySite.csv") -> egg # shouldn't be necesasry once convert to use awl file. 
 
 ## T2. Catch and CPUE, surveyWide ----
   cpue %>% transmute(year,N,
@@ -90,6 +85,7 @@ k <- 2.20462 # kilogram to lb conversion factor
                 cl_f = round(cl_f, 1),
                 n_f,
                 se_f = round (se_f, 2)) -> bio 
+    
     write.csv(bio,"output/t3_sexEggPropCL.csv") # 1996 bio data are missing, use prev published values (1996, pM = 94.9, pf = 5.1; Wessel et al., 2015)
 
 ## T4. Catch and CPUE, byArea ----
@@ -103,6 +99,7 @@ k <- 2.20462 # kilogram to lb conversion factor
         dcast(year ~ Area, value.var = "mu_all_lb") -> cpueByArea_s
   # Join harvest to survey and write  
     left_join(cpueByArea_s,cpueByArea_h, by = "year", suffix = c("_survey","_commerical")) -> cpueByArea
+    
     write.csv(cpueByArea,"output/t4_CPUEallLb_byArea.csv") 
       #commercial values don't match those in draft 2017 report. Presumably mgmt overwrote values in report. 
 
@@ -132,6 +129,7 @@ k <- 2.20462 # kilogram to lb conversion factor
       geom_line () +
       geom_errorbar(aes(ymin=mu-se, ymax=mu+se, width = 0),position = position_dodge(width = 0.00)) + 
       geom_hline(yintercept = unique(cpue_l$avg), colour = grey(c(.1,.5)), lty = 'dashed')
+    
     ggsave("./figs/f3_CPUE_surveyWide.png", dpi=300, height=4.0, width=6.5, units="in")    
 
 ## F4. Mean CL, surveyWide ----
@@ -176,6 +174,34 @@ k <- 2.20462 # kilogram to lb conversion factor
   
     ggsave("./figs/f5_CL_Hist_surv.png", dpi=300, height=8.7, width=6.5, units="in")
 
+## F6. L50, surveyWide----
+  avg <- mean(l50$f50, na.rm = T) # calc longterm avg
+  
+  l50 %>% ggplot(aes(x = year, y = f50) ) +
+    scale_x_continuous(breaks = seq(1990,2016,2))  +
+    scale_y_continuous(breaks = seq(38,43,1)) + 
+    labs( x= 'Year', y = 'L50 (mm)') +
+    geom_point(size = 2)+ 
+    geom_line () +
+    geom_hline(yintercept = avg, lty = 'dashed')
+  
+  ggsave("./figs/f6_L50_surveyWide.png", dpi=300, height=3.5, width=6.25, units="in")
+
+## F7. L50, byArea ----
+  l50_a %>% gather(area, l50, 2:4) -> l50_a_l # reshape
+  l50_a_l %>% group_by(area) %>% summarise (avg = mean(l50, na.rm = T))-> avgs # calc longterm avgs
+  
+  l50_a_l %>% ggplot(aes(x = year, y = l50)) +
+    scale_x_continuous(breaks = seq(1990,2016,2))  +
+    scale_y_continuous(breaks = seq(37,43,1)) + 
+    labs( x= 'Year', y = 'L50 (mm)') +
+    geom_point(size = 1.5)+ 
+    geom_line ()  +
+    theme( axis.text.x  = element_text(angle=0, vjust=0.5)) +
+    facet_wrap(~area, ncol=1, strip.position="right") + 
+    geom_hline(aes (yintercept = avg), avgs, lty = 'dashed')
+  
+  ggsave("./figs/f7_L50_byArea.png", dpi=300, height=4.5, width=6.5, units="in")    
 ## F8. Prop fem, surveyWide ----
   pp %>% select(Event, site, Station, pot, perf) %>%   
     right_join (awl)  %>% 
@@ -264,60 +290,7 @@ k <- 2.20462 # kilogram to lb conversion factor
     geom_hline(aes (yintercept = avg), avgs, colour = rep(grey(c(.1,.5)),3), lty = 'dashed')
   
   ggsave("./figs/f10_cpue_byArea.png", dpi=300, height=2.9, width=9, units="in")  
-    
-      
-      
-      
-      
-     
-      
-      
-      
-
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-            
+ 
 ## F11. Mean CL, byArea ----
   pp %>% select(Event, site, Station, pot, perf) %>%   
     right_join (awl)   %>% 
@@ -370,5 +343,3 @@ k <- 2.20462 # kilogram to lb conversion factor
   
   ggsave("./figs/f12_CL_Hist_byArea.png", dpi=300, height=8.7, width=6.5, units="in")  
 
-## F6. L50, surveyWide----
-  
