@@ -127,109 +127,225 @@ k <- 2.20462 # kilogram to lb conversion factor
       geom_line () +
       geom_errorbar(aes(ymin=mu-se, ymax=mu+se, width = 0),position = position_dodge(width = 0.00)) + 
       geom_hline(yintercept = unique(cpue_l$avg), colour = grey(c(.1,.5)), lty = 'dashed')
-    ggsave("./figs/f3_surveyWideCPUE.png", dpi=300, height=4.0, width=6.5, units="in")    
+    ggsave("./figs/f3_CPUE_surveyWide.png", dpi=300, height=4.0, width=6.5, units="in")    
 
 ## F4. Mean CL, survey-wide ----
-    pp %>% select(Event, site, Station, pot, perf) %>%   
-      right_join (awl)  %>% 
-      filter (site != 11, !Station %in% c("E","E1","E2"), 
-              perf == 1, species == 965) %>% 
-      group_by(year) %>% summarise(    
-        n = n(),   
-        len = mean (cl), 
-        sd = var(cl)^.5,
-        se = sd/(n^.5))-> meanLen_bth
-      
-      ggplot(meanLen_bth, aes (x=year, y = len)) +
-        scale_x_continuous(breaks = seq(1990,2018,2))  +      
-        scale_y_continuous(breaks = seq(28,34,1)) +
-        labs( x= 'Year', y = 'Mean CL (mm)') +
-        geom_point(size = 2)+
-        geom_line()+
-        geom_errorbar(aes(ymin=len-se, ymax=len+se, width = 0)) + 
-        geom_hline(yintercept = mean(meanLen_bth$len, na.rm=T),lty = 'dashed')
-      ggsave("./figs/f4_surveyWideMeanCL.png", dpi=300, height=4., width=6.5, units="in")
+  pp %>% select(Event, site, Station, pot, perf) %>%   
+    right_join (awl)  %>% 
+    filter (site != 11, !Station %in% c("E","E1","E2"), 
+            perf == 1, species == 965) %>% 
+    group_by(year) %>% summarise(    
+      n = n(),   
+      len = mean (cl), 
+      sd = var(cl)^.5,
+      se = sd/(n^.5))-> meanLen_bth
+    
+    ggplot(meanLen_bth, aes (x=year, y = len)) +
+      scale_x_continuous(breaks = seq(1990,2018,2))  +      
+      scale_y_continuous(breaks = seq(28,34,1)) +
+      labs( x= 'Year', y = 'Mean CL (mm)') +
+      geom_point(size = 2)+
+      geom_line()+
+      geom_errorbar(aes(ymin=len-se, ymax=len+se, width = 0)) + 
+      geom_hline(yintercept = mean(meanLen_bth$len, na.rm=T),lty = 'dashed')
+    ggsave("./figs/f4_MeanCL.png", dpi=300, height=4., width=6.5, units="in")
     
 ## F5. CL histogram, survey-wide ----    
-      pp %>% select(Event, site, Station, pot, perf) %>%   
-        right_join (awl)  %>% 
-        filter (site != 11, !Station %in% c("E","E1","E2"), 
-                perf == 1, species == 965, Sex %in% c('1','2')) %>% 
-      
-      ggplot(aes(cl, fill = Sex ))+ 
-        scale_fill_manual(values=c("#bdbdbd", "#636363"), labels = c('Male','Female'), 
-                          guide = guide_legend(direction = "horizontal")) +
-        facet_wrap(~year, ncol = 1, dir = 'v', strip.position="right", scale='free_y')+
-        geom_histogram(aes(y = ..count.. / sapply(PANEL, FUN=function(x) sum(count[PANEL == x]))),
-                       alpha=.8, bins=60, color = 1)+
-        ylab("Proportion")+
-        scale_y_continuous(breaks = seq(.01,.04,.03)) +
-        xlab("Carapace Length (mm)")+
-        scale_x_continuous(breaks = seq(10,55,5), limits = c(15,55))+
-        theme(panel.spacing.y = unit(0, "lines"), legend.title=element_blank(), 
-              legend.position = c(.87,-.04), legend.background = element_rect (fill = "transparent" ))          
-      ggsave("./figs/f5_CL_Hist_surv.png", dpi=300, height=8.7, width=6.5, units="in")
+  pp %>% select(Event, site, Station, pot, perf) %>%   
+    right_join (awl)  %>% 
+    filter (site != 11, !Station %in% c("E","E1","E2"), 
+            perf == 1, species == 965, Sex %in% c('1','2')) %>% 
+  
+  ggplot(aes(cl, fill = Sex ))+ 
+    scale_fill_manual(values=c("#bdbdbd", "#636363"), labels = c('Male','Female'), 
+                      guide = guide_legend(direction = "horizontal")) +
+    facet_wrap(~year, ncol = 1, dir = 'v', strip.position="right", scale='free_y')+
+    geom_histogram(aes(y = ..count.. / sapply(PANEL, FUN=function(x) sum(count[PANEL == x]))),
+                   alpha=.8, bins=60, color = 1)+
+    ylab("Proportion")+
+    scale_y_continuous(breaks = seq(.01,.04,.03)) +
+    xlab("Carapace Length (mm)")+
+    scale_x_continuous(breaks = seq(10,55,5), limits = c(15,55))+
+    theme(panel.spacing.y = unit(0, "lines"), legend.title=element_blank(), 
+          legend.position = c(.87,-.04), legend.background = element_rect (fill = "transparent" ))          
+  ggsave("./figs/f5_CL_Hist_surv.png", dpi=300, height=8.7, width=6.5, units="in")
 
 ## F8. Prop fem, survey-wide ----
-      pp %>% select(Event, site, Station, pot, perf) %>%   
-        right_join (awl)  %>% 
-        filter (site != 11, !Station %in% c("E","E1","E2"), 
-                perf == 1, species == 965, Sex %in% c('1','2')) %>% 
-      group_by(year,Sex) %>% summarise(cnt =  sum(freq)) %>%
-      spread(Sex, cnt) -> wid 
-      colnames(wid) <- c('year','m','f')
-      wid %>% group_by(year) %>% summarise (pf = f/(m+f)) -> pfem
-      
-      avg <- mean(pfem$pf) # calc longterm avg
-      
-      pfem %>% ggplot(aes(x = year, y = pf) ) +
-        scale_x_continuous(breaks = seq(1990,2018,2))  +
-        scale_y_continuous(breaks = seq(0,.4,.1)) +
-        labs( x= 'Year', y = 'Female proportion') +
-        geom_point(size = 2)+ 
-        geom_line () +
-        geom_hline(yintercept = avg, lty = 'dashed')
-      
-      ggsave("./figs/f8_propFem_surv.png", dpi=300, height=3.5, width=6.25, units="in")
+  pp %>% select(Event, site, Station, pot, perf) %>%   
+    right_join (awl)  %>% 
+    filter (site != 11, !Station %in% c("E","E1","E2"), 
+            perf == 1, species == 965, Sex %in% c('1','2')) %>% 
+  group_by(year,Sex) %>% summarise(cnt =  sum(freq)) %>%
+  spread(Sex, cnt) -> wid 
+  colnames(wid) <- c('year','m','f')
+  wid %>% group_by(year) %>% summarise (pf = f/(m+f)) -> pfem
+  
+  avg <- mean(pfem$pf) # calc longterm avg
+  
+  pfem %>% ggplot(aes(x = year, y = pf) ) +
+    scale_x_continuous(breaks = seq(1990,2018,2))  +
+    scale_y_continuous(breaks = seq(0,.4,.1)) +
+    labs( x= 'Year', y = 'Female proportion') +
+    geom_point(size = 2)+ 
+    geom_line () +
+    geom_hline(yintercept = avg, lty = 'dashed')
+  
+  ggsave("./figs/f8_propFem_surv.png", dpi=300, height=3.5, width=6.25, units="in")
 
 ## F9. Prop fem, by area ----
-      pp %>% select(Event, site, Station, pot, perf) %>%   
-        right_join (awl)  %>% 
-        filter (site != 11, !Station %in% c("E","E1","E2"), 
-                perf == 1, species == 965, Sex %in% c('1','2')) %>% 
-        left_join (siteStatLUT, by = c("site"="SiteNum")) %>% 
-        group_by(ShrimpArea, year,Sex) %>% summarise(cnt =  sum(freq)) %>%
-        spread(Sex, cnt) -> wid
-        colnames(wid) <- c('area','year','m','f') 
-        wid  %>% group_by(area, year) %>% transmute (pf = f/m) -> pfem_a
-        
-      pfem_a %>% group_by(area) %>% summarise (avg = mean(pf, na.rm = T))-> avgs # calc longterm avgs
+  pp %>% select(Event, site, Station, pot, perf) %>%   
+    right_join (awl)  %>% 
+    filter (site != 11, !Station %in% c("E","E1","E2"), 
+            perf == 1, species == 965, Sex %in% c('1','2')) %>% 
+    left_join (siteStatLUT, by = c("site"="SiteNum")) %>% 
+    group_by(ShrimpArea, year,Sex) %>% summarise(cnt =  sum(freq)) %>%
+    spread(Sex, cnt) -> wid
+    colnames(wid) <- c('area','year','m','f') 
+    wid  %>% group_by(area, year) %>% transmute (pf = f/m) -> pfem_a
+    
+  pfem_a %>% group_by(area) %>% summarise (avg = mean(pf, na.rm = T))-> avgs # calc longterm avgs
+  labels <- c('1' = "Area 1", '2' = "Area 2", '3' = "Area 3")
+  
+  pfem_a %>% ggplot(aes(x = year, y = pf)) +
+    scale_x_continuous(breaks = seq(1990,2018,2))  +
+    scale_y_continuous(breaks = seq(0,.65,.1)) + 
+    labs( x= 'Year', y = 'Female proportion') +
+    ylim(0,.65) +
+    geom_point(size = 1.5)+ 
+    geom_line () +
+    theme( axis.text.x  = element_text(angle=0, vjust=0.5)) +
+    facet_wrap(~area, ncol=1, strip.position="right", labeller=labeller(area = labels)) + 
+    geom_hline(aes (yintercept = avg), avgs, lty = 'dashed')
+  
+  ggsave("./figs/f9_propFem_area.png", dpi=300, height=4.5, width=6.5, units="in")
+ 
+## F10. CPUE, by area ----
+  # reshape cpue to long and convert to lb  
+    cpue_area %>% transmute(
+      Area,
+      year,
+      all = mu_all_kg * k,
+      lrg = mu_lrg_kg * k) %>% 
+      gather(class, mu, c(all, lrg)) %>% 
+      left_join(  
+        cpue_area %>% transmute(
+          Area,
+          year,
+          all = se_all_kg * k,
+          lrg = se_lrg_kg * k) %>% 
+          gather(class, se, c(all, lrg))) -> cpue_l   
+  # calc longterm avgs 
+    cpue_l %>% group_by(class, Area) %>% summarise (avg = mean(mu, na.rm = TRUE))-> avgs 
+    #Specific values included in results
+      cpue_l %>% filter (Area == '1', class == 'lrg', year > 2004) %>% group_by(Area) %>% summarise (avg =  mean(mu, na.rm = T))
+      cpue_l %>% filter (Area == '1', class == 'lrg', year < 2004) %>% group_by(Area) %>% summarise (avg =  mean(mu , na.rm = T))
+      cpue_l %>% filter (class == 'all') %>% group_by(Area) %>% summarise (avg =  mean(mu, na.rm = T))  
+      
+  labels <- c('1' = "Area 1", '2' = "Area 2", '3' = "Area 3")
+  
+  cpue_l %>%     
+    ggplot(aes(x = year, y = mu, group = class, colour = class) ) +
+    scale_color_grey(start=.1, end=0.5,  name = '', labels = c("All Sizes", "Larges (>32mm)")) +
+    theme(legend.position = c(.85,.8), legend.background = element_rect (fill = "transparent" )) +
+    scale_x_continuous(breaks = seq(1990,2018,2))  +
+    scale_y_continuous(breaks = seq(0,4,.5)) + 
+    labs( x= 'Year', y = 'Mean weight per pot (lb)') +
+    geom_point(size = 1.5)+ 
+    geom_line ()  +
+    geom_errorbar(aes(ymin=mu-se, ymax=mu+se, width = 0), position = position_dodge(width = 0.0)) + 
+    theme( axis.text.x  = element_text(angle=90, vjust=0.5)) +
+    facet_wrap(~Area, ncol=3, labeller=labeller(ShrimpArea = labels)) +
+    geom_hline(aes (yintercept = avg), avgs, colour = rep(grey(c(.1,.5)),3), lty = 'dashed')
+  
+  ggsave("./figs/f10_cpue_byArea.png", dpi=300, height=2.9, width=9, units="in")  
+    
+      
+      
+      
+      
+      
+      read.csv('./P04_2017BOF/output/var_byArea_xz.csv') -> var_byArea
+      var_byArea %>%  transmute (year, 
+                                 ShrimpArea = as.factor(Area),
+                                 all = 2.20462 * se_all_kg,
+                                 lrg = 2.20462 * se_lrg_kg) -> se_byArea 
+      se_byArea %>% gather(class, se, c(all, lrg)) -> se_byArea_l
+      #se_byArea_l[se_byArea_l$class == 'lrg', 'se']  <- 0  # omit error bars for larges
+      
+      cpueByArea %>% select (year = year, ShrimpArea, all = cpueAllLb, lrg = cpueLrgLb)  %>%  
+        gather(class, cpue_lb, c(all,lrg)) -> cpueByArea_l
+      
+      cpueByArea_l %>% group_by(class, ShrimpArea) %>% summarise (avg = mean(cpue_lb, na.rm = TRUE))-> avgs # calc longterm avgs
+      #Specific values included in resultes
+      cpueByArea_l %>% filter (ShrimpArea == '1', class == 'lrg', year > 2004) %>% group_by(ShrimpArea) %>% summarise (avg =  mean(cpue_lb, na.rm = T))
+      cpueByArea_l %>% filter (ShrimpArea == '1', class == 'lrg', year < 2004) %>% group_by(ShrimpArea) %>% summarise (avg =  mean(cpue_lb, na.rm = T))
+      cpueByArea_l %>% filter (class == 'all') %>% group_by(ShrimpArea) %>% summarise (avg =  mean(cpue_lb, na.rm = T))
+      
       labels <- c('1' = "Area 1", '2' = "Area 2", '3' = "Area 3")
       
-      pfem_a %>% ggplot(aes(x = year, y = pf)) +
-        scale_x_continuous(breaks = seq(1990,2018,2))  +
-        scale_y_continuous(breaks = seq(0,.65,.1)) + 
-        labs( x= 'Year', y = 'Female proportion') +
-        ylim(0,.65) +
+      cpueByArea_l %>% left_join(se_byArea_l) %>%    
+        ggplot(aes(x = year, y = cpue_lb, group = class, colour = class) ) +
+        scale_color_grey(start=.1, end=0.5,  name = '', labels = c("All Sizes", "Larges (>32mm)")) +
+        theme(legend.position = c(.85,.8), legend.background = element_rect (fill = "transparent" )) +
+        scale_x_continuous(breaks = seq(1990,2016,2))  +
+        scale_y_continuous(breaks = seq(0,4,.5)) + 
+        labs( x= 'Year', y = 'Mean weight per pot (lb)') +
         geom_point(size = 1.5)+ 
-        geom_line () +
-        theme( axis.text.x  = element_text(angle=0, vjust=0.5)) +
-        facet_wrap(~area, ncol=1, strip.position="right", labeller=labeller(area = labels)) + 
-        geom_hline(aes (yintercept = avg), avgs, lty = 'dashed')
+        geom_line ()  +
+        geom_errorbar(aes(ymin=cpue_lb-se, ymax=cpue_lb+se, width = 0), position = position_dodge(width = 0.0)) + 
+        theme( axis.text.x  = element_text(angle=90, vjust=0.5)) +
+        facet_wrap(~ShrimpArea, ncol=3, labeller=labeller(ShrimpArea = labels)) +
+        geom_hline(aes (yintercept = avg), avgs, colour = rep(grey(c(.1,.5)),3), lty = 'dashed')
       
-      ggsave("./figs/f9_propFem_area.png", dpi=300, height=4.5, width=6.5, units="in")
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
+      #ggsave("./figs/areaCPUE_lbs_w_wVar_xz.png", dpi=300, height=2.9, width=9, units="in")      
+      
+      
+      
+
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+            
 ## ASSEMBLE TABLES ON JRs LIST ####
 
 # CPUE (ALL_LB) by ShrimpArea and StatArea - both survey and harvest ----
