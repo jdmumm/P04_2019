@@ -18,6 +18,7 @@ theme_set(theme_bw(base_size=12,base_family='Times New Roman')+
                   panel.grid.minor = element_blank()))
 read.csv('output/cpue_surveyWide.csv') -> cpue # catch and cpue from cpue.r, survey-wide
 read.csv('output/cpue_byArea.csv') -> cpue_area # catch and cpue from cpue.r, byArea
+read.csv('output/cpue_bySite.csv') -> cpue_site # catch and cpue from cpue.r, bySite 
 read.csv('data/AWL_190920.csv') %>% 
          transmute(year = YEAR, Event = EVENT_ID, site = SITE_ID, Station = STATION_ID, pot = POT_ID, species = FK_SPECIES_CODE,
          Sex = as.factor (FK_SEX_CODE), freq = FREQUENCY, cl = CARAPACE_LENGTH_MM, wt = WEIGHT_GRAMS, eggDev = SHRIMP_EGG_DEVEL_CODE, 
@@ -344,18 +345,27 @@ k <- 2.20462 # kilogram to lb conversion factor
   ggsave("./figs/f12_CL_Hist_byArea.png", dpi=300, height=8.7, width=6.5, units="in")  
 
 
-## apxB1. CPUE, survey and comm, by stat
+## apxB1. CPUE, survey and comm, by stat ----
   # commercial 
     harv %>% left_join (yearAreaLUT) %>% na.omit -> harv #exclude those 814 records with null effort
-    # aggregate by StatArea
     harv %>% group_by (year,stat) %>% summarize (
       cpueAllLb = sum(lbs)/sum(pots)) -> cpueByStat  
     dcast(cpueByStat, year ~ stat, value.var = "cpueAllLb" ) -> cpueByStat_h
   
   # survey 
+    cpue_site %>% transmute (year,Site,
+                             mu_all_lb = mu_all_kg * k,
+                             mu_lrg_lb = mu_lrg_kg * k) %>%  
+      left_join (
+      siteStatLUT %>% select(-Comments), by = c("Site" = "SiteNum")) %>%
+      dcast(year ~ StatArea, value.var = "mu_all_lb", fun = mean ) -> cpueByStat_s # mean because two sites in stat 476006
+  # join commercial to survey and write 
+    as.character(unique(siteStatLUT$StatArea)) %>% sort -> surveyedStats
+    cpueByStat_h %>% select(c(year,one_of( surveyedStats))) -> cpueByStat_h_surveyed  # limit com stats to those that contain survey sites. 
+    left_join(cpueByStat_s,cpueByStat_h_surveyed, by = "year", suffix = c("_s","_h")) %>%
+      select(order(colnames(.)))  -> cpueByStat
+    write.csv(cpueByStat,"output/apxB1_CPUEallLb_byStatArea.csv") # these fishery values don't match those in draft 2017 exactly. Presumably mgmt overwrote. 
     
-    
-  
 ## apxC1. Ovig, by stat area  ----
   pp %>% select(Event, site, Station, pot, perf) %>%   
     right_join (awl)  %>% 
