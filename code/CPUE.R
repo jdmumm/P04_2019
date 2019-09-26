@@ -127,4 +127,4 @@ all_bySite %>% left_join (large_bySite) %>%
 
 write.csv(byYear, "./output/cpue_surveyWide.csv", row.names = F)  
 write.csv(byArea, "./output/cpue_byArea.csv", row.names = F)    
-write.csv(bySite, "./output/cpue_byArea.csv", row.names = F)
+write.csv(bySite, "./output/cpue_bySite.csv", row.names = F)

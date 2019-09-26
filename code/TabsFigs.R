@@ -344,6 +344,18 @@ k <- 2.20462 # kilogram to lb conversion factor
   ggsave("./figs/f12_CL_Hist_byArea.png", dpi=300, height=8.7, width=6.5, units="in")  
 
 
+## apxB1. CPUE, survey and comm, by stat
+  # commercial 
+    harv %>% left_join (yearAreaLUT) %>% na.omit -> harv #exclude those 814 records with null effort
+    # aggregate by StatArea
+    harv %>% group_by (year,stat) %>% summarize (
+      cpueAllLb = sum(lbs)/sum(pots)) -> cpueByStat  
+    dcast(cpueByStat, year ~ stat, value.var = "cpueAllLb" ) -> cpueByStat_h
+  
+  # survey 
+    
+    
+  
 ## apxC1. Ovig, by stat area  ----
   pp %>% select(Event, site, Station, pot, perf) %>%   
     right_join (awl)  %>% 
