@@ -87,7 +87,8 @@ all_bySite %>% select(year, Site, Area, N, mu_all_cnt, mu_all_kg, tau_all_kg, va
     tau_lrg_kg =  mu_lrg_kg * N,
     tau_lrg_cnt = mu_lrg_cnt * N,
     var_tau_lrg_kg = (tau_all_kg^2)*r_var + (r_bar_kg^2)*var_all_kg - r_var*var_all_kg, 
-    var_mu_lrg_kg = var_tau_lrg_kg/(N^2) ) -> large_bySite      
+    var_mu_lrg_kg = var_tau_lrg_kg/(N^2),
+    se_lrg_kg = (var_mu_lrg_kg^.5)) -> large_bySite      
 #byYear 
 large_bySite %>% filter (Site != "11") %>% group_by (year) %>% 
   summarise (
@@ -120,6 +121,10 @@ all_byYear %>% left_join (large_byYear) %>%
 all_byArea %>% left_join (large_byArea) %>%
   select(year, Area, N, n, tau_all_kg, tau_all_cnt, mu_all_kg, mu_all_cnt, se_all_kg,
          tau_lrg_kg, tau_lrg_cnt, mu_lrg_kg, mu_lrg_cnt, se_lrg_kg)-> byArea
+all_bySite %>% left_join (large_bySite) %>%
+  select(year, Site, N, n, tau_all_kg, tau_all_cnt, mu_all_kg, mu_all_cnt, se_all_kg,
+         tau_lrg_kg, tau_lrg_cnt, mu_lrg_kg, mu_lrg_cnt, se_lrg_kg)-> bySite
 
 write.csv(byYear, "./output/cpue_surveyWide.csv", row.names = F)  
 write.csv(byArea, "./output/cpue_byArea.csv", row.names = F)    
+write.csv(bySite, "./output/cpue_byArea.csv", row.names = F)
