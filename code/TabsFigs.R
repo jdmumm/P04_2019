@@ -151,7 +151,7 @@ k <- 2.20462 # kilogram to lb conversion factor
       geom_point(size = 2)+
       geom_line()+
       geom_errorbar(aes(ymin=len-se, ymax=len+se, width = 0)) + 
-      geom_hline(yintercept = mean(meanLen_bth$len, na.rm=T),lty = 'dashed')
+      geom_hline(yintercept = mean(meanLen$len, na.rm=T),lty = 'dashed')
     ggsave("./figs/f4_meanCL.png", dpi=300, height=4., width=6.5, units="in")
     
 ## F5. CL histograms, surveyWide ----    
@@ -179,7 +179,7 @@ k <- 2.20462 # kilogram to lb conversion factor
   avg <- mean(l50$f50, na.rm = T) # calc longterm avg
   
   l50 %>% ggplot(aes(x = year, y = f50) ) +
-    scale_x_continuous(breaks = seq(1990,2016,2))  +
+    scale_x_continuous(breaks = seq(1990,2018,2))  +
     scale_y_continuous(breaks = seq(38,43,1)) + 
     labs( x= 'Year', y = 'L50 (mm)') +
     geom_point(size = 2)+ 
