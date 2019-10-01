@@ -1,7 +1,7 @@
 ## L50.r ####
 # Josh Mumm # 190925
 # estimate length at 50% fem using logistic regression
-# Sloppy, could use tidying 
+# Sloppy, could use much tidying 
 # Clunky, manually change area 1:3 in prep filter and last lines for by area file 
 
 #LOAD ----
@@ -24,7 +24,8 @@ pp %>% select(Event, site, Station, pot, perf) %>%
   right_join (awl %>% select(Event, site, Station, pot, year, species, sex, freq, cl))  %>% 
   filter (site != 11, !Station %in% c("E","E1","E2"), 
           perf == 1, species == 965, cl>0, sex %in% c(1,2)) %>% 
-  left_join (siteStatLUT, by = c('site' ='SiteNum')) %>% arrange(year) -> dat   
+  left_join (siteStatLUT, by = c('site' ='SiteNum')) %>% arrange(year) %>% 
+  mutate (fem = sex - 1) -> dat  
 
 # Filter by area.  Manually changed for byAreaFile 
 #dat%>% filter (ShrimpArea == 1) -> dat
@@ -66,10 +67,10 @@ for( i in yrs ) {
   
   Fem50[Fem50$yrs == i,2] <- fem50T
   
-  curve( exp(cf[1] + cf[2]*x)/(1+exp(cf[1] + cf[2]*x)), 
+  curve( exp(cfT[1] + cfT[2]*x)/(1+exp(cfT[1] + cfT[2]*x)), 
          ylab = "Probability of fem", col ="blue", add=T, lwd=2)  
 
-  fem50 <- -cf[1]/cf[2]
+  fem50 <- -cfT[1]/cfT[2]
   abline(v = fem50, col = "blue", abline = 2 )
   }  
 
