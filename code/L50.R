@@ -1,7 +1,7 @@
 ## L50.r ####
 # Josh Mumm # 190925
 # estimate length at 50% fem using logistic regression
-# Sloppy, could use much tidying 
+# Sloppy, could use tidying 
 # Clunky, manually change area 1:3 in prep filter and last lines for by area file 
 
 #LOAD ----
@@ -28,37 +28,6 @@ pp %>% select(Event, site, Station, pot, perf) %>%
 
 # Filter by area.  Manually changed for byAreaFile 
 #dat%>% filter (ShrimpArea == 1) -> dat
-
-## ALL YEARS COMBINED ----
-
-#create 0 to 1 fem variable
-dat %>% mutate ( fem = sex - 1) -> dat 
-
-# plot proportion points
-par(mfrow=c(1,1))
-#set up empty titled plot with approriate ranges
-plot(fem ~ cl, data = dat, pch = "|", xlim = c(10,55),
-     ylab = "Prop Fem", xlab = "ln",
-     main = "PropFem vs. length", type = "p", ylim = c(0, 1))
-
-#bin data 
-  BREAKS <- c(seq(10,55,1))  # break points for CL bins
-  LN <- cut(dat$cl, BREAKS)         
-  LN                       # Categorical variable with one level for each LN increment
-  table(dat$fem, LN)      # summerizes number of males and fems points in each LN bin
-  fem.prop <- tapply(dat$fem, LN, function(x) sum(x>0)/length(x))
-  fem.prop                  # propotion of fems of total obs in each LN bin
-
-# add proportion Points
-  x <- seq(10.5,54.5,1) # midpoints for each LN bin, for ploting. 
-  points(x, fem.prop, pch=19, cex = 1.2, col = "blue") # adds proportion points to plot 
-
-# add curve to plot
-  mod <- glm(fem ~ cl, family = "binomial", data = dat)  # logistic GLM of sex vs cl
-  cf <- coef(mod)     
-  curve( exp(cf[1] + cf[2]*x)/(1+exp(cf[1] + cf[2]*x)), 
-         ylab = "Probability of fem", col ="red", add=T, lwd=2)  
-  summary(mod) 
 
 ## BY YEAR  ----
 unique((dat$year)) -> yrs
