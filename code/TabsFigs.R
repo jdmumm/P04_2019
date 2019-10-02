@@ -35,6 +35,7 @@ read.csv("data/SiteStatArea_LUT.csv") -> siteStatLUT
 read.csv("data/yearArea_LUT.csv") -> yearAreaLUT
 read.csv('output/f50_surveyWide.csv') %>% select(year = yrs, f50) -> l50 
 read.csv('output/f50_byArea.csv') %>% select (year, 'Area 1' = f50_1, 'Area 2' = f50_2, 'Area 3' = f50_3) -> l50_a
+read.csv("data/PWSShrimpHarvestComposite_60to2017.csv") -> histHarv # harvest, nonComm and Comm for harvest figure. Need to append 2017-19. 
 k <- 2.20462 # kilogram to lb conversion factor 
 
 ## T2. Catch and CPUE, surveyWide ----
@@ -51,7 +52,7 @@ k <- 2.20462 # kilogram to lb conversion factor
       right_join (awl)  %>% 
       filter (site != 11, !Station %in% c("E","E1","E2"), 
               perf == 1, species == 965, Sex %in% c(1,2)  ) -> awls  # excluding transitionals 
-    awls %>% group_by (year, Sex)  %>% summarise( # issue where freq = 2 in 2005 for males, but since grouping by sex and virtually all males in 2005 were 2, ok as is 
+    awls %>% group_by (year, Sex)  %>% summarise( 
       n = n(),   
       len = mean (cl), 
       sd = var(cl)^.5,
@@ -104,6 +105,29 @@ k <- 2.20462 # kilogram to lb conversion factor
     write.csv(cpueByArea,"output/t4_CPUEallLb_byArea.csv") 
       #commercial values don't match those in draft 2017 report. Presumably mgmt overwrote values in report. 
 
+## F1. Harvest and survey CPUE ----
+    histHarv %>% select(year = Year, Total_c, Spots_nc) -> histHarv # select most complete time series from each of nc and c. 
+    histHarv %>% gather("fishery", "lbs" , 2:3)  %>% 
+      mutate (lbs = lbs/1000 , 
+              fishery = as.factor(fishery)) ->  histHarv_l
+    
+    cpue %>% transmute (year, fishery = as.factor('Pot Survey CPUE'), lbs = mu_all_kg * k * 100) %>% rbind(histHarv_l) -> dat
+    cbind.data.frame(year = c(1989,1990,1991),fishery = rep('Pot Survey CPUE',3), lbs = c(130,90,130)) -> oldSurv #(Trowbridge 1994)
+    
+    rbind.data.frame(oldSurv,dat) -> dat
+    
+    dat %>% ggplot(aes (x=year, y = lbs, fill = fishery)) +
+      scale_y_continuous(breaks = seq(0,300,50)) + ylab('Harvest (Thousands of Pounds)')+
+      scale_x_continuous(breaks = seq(1960,2020, 5)) +
+      geom_bar(data = filter (dat, fishery != 'Pot Survey CPUE'), stat = "identity", position = "stack") + 
+      scale_fill_manual(values=c("white","gray60", "gray30"), drop = TRUE, 
+                        labels = c("" ,'Noncommercial Harvest','Commercial Harvest'), guide = guide_legend(title = NULL)) + 
+      theme(legend.position = c(.2,.8), legend.title=element_blank()) +
+      geom_line (data = filter(dat,fishery == "Pot Survey CPUE"),
+                 aes(lty = fishery), color = "black", lwd = 1 )+
+      scale_y_continuous(sec.axis = sec_axis(~./100, name = "Survey CPUE (lbs/pot)"))
+    
+    ggsave("./figs/f1_HarvestAndSurvey.png", dpi=300, height=4.5, width=6.5, units="in")  
 ## F3. CPUE, surveyWide ----
   # reshape cpue to long and convert to lb
     cpue %>% transmute(
@@ -389,3 +413,4 @@ k <- 2.20462 # kilogram to lb conversion factor
   
     write.csv(pOvig,"output/apxC1_ovigByStat.csv") # note ovigerity data from 95-97 are missing. 
   
+    
