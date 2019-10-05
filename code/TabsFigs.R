@@ -35,7 +35,7 @@ read.csv("data/SiteStatArea_LUT.csv") -> siteStatLUT
 read.csv("data/yearArea_LUT.csv") -> yearAreaLUT
 read.csv('output/f50_surveyWide.csv') %>% select(year = yrs, f50) -> l50 
 read.csv('output/f50_byArea.csv') %>% select (year, 'Area 1' = f50_1, 'Area 2' = f50_2, 'Area 3' = f50_3) -> l50_a
-read.csv("data/PWSShrimpHarvestComposite_60to2017.csv") -> histHarv # harvest, nonComm and Comm for harvest figure. Need to append 2017-19. 
+read.csv("data/PWSShrimpHarvestComposite_60to2018.csv") -> histHarv # harvest, nonComm and Comm for harvest figure. Need to append 2017-19. 
 k <- 2.20462 # kilogram to lb conversion factor 
 
 ## T2. Catch and CPUE, surveyWide ----
